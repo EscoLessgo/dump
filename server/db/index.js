@@ -12,7 +12,7 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new Database(path.join(dataDir, 'database.sqlite'));
 
-// Realistic Schema for Analytics
+// Realistic Schema
 db.exec(`
     CREATE TABLE IF NOT EXISTS pastes (
         id TEXT PRIMARY KEY,
@@ -47,22 +47,43 @@ db.exec(`
     );
 `);
 
-// Migration: Check if new columns exist (in case DB already exists)
-try {
-    const tableInfo = db.prepare('PRAGMA table_info(paste_views)').all();
-    const existingColumns = tableInfo.map(c => c.name.toLowerCase());
+// Migration Helper
+function migrateTable(tableName, columns) {
+    try {
+        const tableInfo = db.prepare(`PRAGMA table_info(${tableName})`).all();
+        const existing = tableInfo.map(c => c.name.toLowerCase());
 
-    const required = ['country', 'countrycode', 'region', 'regionname', 'city', 'zip', 'isp', 'org', 'asname'];
-    required.forEach(col => {
-        if (!existingColumns.includes(col)) {
-            console.log(`🔧 Migrating: Adding ${col} to paste_views`);
-            db.exec(`ALTER TABLE paste_views ADD COLUMN ${col} TEXT`);
-        }
-    });
-} catch (e) {
-    console.warn('Migration warning:', e.message);
+        columns.forEach(col => {
+            if (!existing.includes(col.name.toLowerCase())) {
+                console.log(`🔧 Migrating: Adding ${col.name} to ${tableName}`);
+                db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${col.name} ${col.type}`);
+            }
+        });
+    } catch (e) {
+        console.warn(`Migration failed for ${tableName}:`, e.message);
+    }
 }
 
-console.log('✅ SQLite Database Ready with Analytics Support');
+// Ensure all analytics columns exist
+migrateTable('paste_views', [
+    { name: 'country', type: 'TEXT' },
+    { name: 'countryCode', type: 'TEXT' },
+    { name: 'region', type: 'TEXT' },
+    { name: 'regionName', type: 'TEXT' },
+    { name: 'city', type: 'TEXT' },
+    { name: 'zip', type: 'TEXT' },
+    { name: 'isp', type: 'TEXT' },
+    { name: 'org', type: 'TEXT' },
+    { name: 'asName', type: 'TEXT' }
+]);
+
+// Ensure all paste columns exist (fixes "can't post" issues)
+migrateTable('pastes', [
+    { name: 'burnAfterRead', type: 'INTEGER DEFAULT 0' },
+    { name: 'isPublic', type: 'INTEGER DEFAULT 1' },
+    { name: 'expiresAt', type: 'DATETIME' }
+]);
+
+console.log('✅ SQLite Database Migrations Complete');
 
 export default db;

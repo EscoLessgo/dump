@@ -66,20 +66,23 @@ const columns = [
     { name: 'asName', type: 'TEXT' }
 ];
 
-const tableInfo = db.prepare('PRAGMA table_info(paste_views)').all();
-const existingColumns = tableInfo.map(c => c.name);
+try {
+    const tableInfo = db.prepare('PRAGMA table_info(paste_views)').all();
+    const existingColumns = tableInfo.map(c => c.name.toLowerCase());
 
-columns.forEach(col => {
-    if (!existingColumns.includes(col.name)) {
-        console.log(`🔧 Migrating: Adding ${col.name} to paste_views`);
-        try {
-            db.exec(`ALTER TABLE paste_views ADD COLUMN ${col.name} ${col.type}`);
-        } catch (e) {
-            console.warn(`Could not add column ${col.name}:`, e.message);
+    columns.forEach(col => {
+        if (!existingColumns.includes(col.name.toLowerCase())) {
+            console.log(`🔧 Migrating: Adding ${col.name} to paste_views`);
+            try {
+                db.exec(`ALTER TABLE paste_views ADD COLUMN ${col.name} ${col.type}`);
+            } catch (e) {
+                console.warn(`Could not add column ${col.name}:`, e.message);
+            }
         }
-    }
-});
-
-console.log('✅ Database Schema & Migrations Initialized');
+    });
+    console.log('✅ Database Schema & Migrations Initialized');
+} catch (err) {
+    console.error('❌ Migration Check Failed:', err.message);
+}
 
 export default db;

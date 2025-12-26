@@ -146,9 +146,11 @@ router.get('/:id', async (req, res) => {
                             req.headers['user-agent'] || ''
                         );
                     } catch (e) {
-                        console.error('Track error:', e);
+                        console.error('Track update error:', e.message);
                     }
                 }
+            }).catch(err => {
+                console.warn('Geolocation background task failed:', err.message);
             });
         }
 

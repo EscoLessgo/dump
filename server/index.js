@@ -126,7 +126,6 @@ app.use((err, req, res, next) => {
 async function startServer() {
     try {
         // Run migrations
-        console.log('🔄 Running database migrations...');
         // DB initialized automatically
 
         // Start listening
@@ -150,6 +149,17 @@ async function startServer() {
         process.exit(1);
     }
 }
+
+// Global Process Handlers for Crash Diagnostics
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('CRITICAL: Uncaught Exception:', error);
+    // Give time to log then exit
+    setTimeout(() => process.exit(1), 1000);
+});
 
 startServer();
 

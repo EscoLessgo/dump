@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import pastesRouter from './routes/pastes.js';
 import authRouter from './routes/auth.js';
 import { requireAuth } from './middleware/auth.js';
-import migrate from './db/migrate.js';
+// Migrations handled in db/index.js
 
 dotenv.config();
 
@@ -128,7 +128,7 @@ async function startServer() {
     try {
         // Run migrations
         console.log('🔄 Running database migrations...');
-        await migrate();
+        // DB initialized automatically
 
         // Start listening
         app.listen(PORT, () => {

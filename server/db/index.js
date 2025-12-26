@@ -1,37 +1,58 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-// Use SQLite for local development, PostgreSQL for production
-const isProduction = process.env.NODE_ENV === 'production';
-const usePostgres = process.env.DATABASE_URL && isProduction;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let pool;
+// DATA FOLDER Selection:
+// 1. RAILWAY_VOLUME_MOUNT_PATH if on Railway with a volume (Recommended)
+// 2. ../../data (local)
+const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..', '..', 'data');
 
-if (usePostgres) {
-    console.log('🔗 Using PostgreSQL (Production)...');
-    const pg = await import('pg');
-    const { Pool } = pg.default;
-
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
-    });
-
-    pool.on('connect', () => {
-        console.log('✅ Connected to PostgreSQL database');
-    });
-
-    pool.on('error', (err) => {
-        console.error('❌ Unexpected database error:', err);
-        process.exit(-1);
-    });
-} else {
-    console.log('🔗 Using SQLite (Local Development)...');
-    console.log('   No PostgreSQL setup required! 🎉');
-    const sqlite = await import('./sqlite.js');
-    pool = sqlite.default;
+// Ensure folder exists
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
 }
 
-export default pool;
+// Database File
+const dbPath = path.join(dataDir, 'pastebin.db');
+console.log(`📦 Database Path: ${dbPath}`);
+
+// Initialize DB (Synchronous)
+const db = new Database(dbPath);
+
+// Optimizations
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+// --- SCHEMA DEFINITION (One file to rule them all) ---
+db.exec(`
+    CREATE TABLE IF NOT EXISTS pastes (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        content TEXT NOT NULL,
+        language TEXT DEFAULT 'plaintext',
+        views INTEGER DEFAULT 0,
+        image TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expiresAt DATETIME,
+        burnAfterRead INTEGER DEFAULT 0,
+        isPublic INTEGER DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS paste_views (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pasteId TEXT,
+        ip TEXT,
+        country TEXT,
+        city TEXT,
+        userAgent TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(pasteId) REFERENCES pastes(id) ON DELETE CASCADE
+    );
+`);
+
+console.log('✅ Database Schema Initialized');
+
+export default db;

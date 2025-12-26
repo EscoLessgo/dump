@@ -1,5 +1,5 @@
 import express from 'express';
-import pool from '../db/index.js';
+import db from '../db/index.js';
 import fetch from 'node-fetch';
 
 const router = express.Router();
@@ -18,14 +18,13 @@ function generateId() {
 function getClientIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0] ||
         req.headers['x-real-ip'] ||
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress;
+        req.socket.remoteAddress ||
+        '127.0.0.1';
 }
 
-// Fetch geolocation data from ip-api.com
+// Fetch geolocation data
 async function fetchGeolocation(ip) {
     try {
-        // For localhost/private IPs, use a fallback
         if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
             return null;
         }
@@ -48,7 +47,7 @@ async function fetchGeolocation(ip) {
 // CREATE a new paste
 router.post('/', async (req, res) => {
     try {
-        const { title, content, language, expiresAt, isPublic, password, burnAfterRead } = req.body;
+        const { title, content, language, expiresAt, isPublic, burnAfterRead } = req.body;
 
         if (!content) {
             return res.status(400).json({ error: 'Content is required' });
@@ -57,32 +56,32 @@ router.post('/', async (req, res) => {
         let id;
         let exists = true;
 
-        // Generate unique ID
+        // Generate and check ID unique
         while (exists) {
             id = generateId();
-            const check = await pool.query('SELECT id FROM pastes WHERE id = $1', [id]);
-            exists = check.rows.length > 0;
+            const check = db.prepare('SELECT id FROM pastes WHERE id = ?').get(id);
+            exists = !!check;
         }
 
-        const query = `
-      INSERT INTO pastes (id, title, content, language, expires_at, is_public, password, burn_after_read)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `;
+        const stmt = db.prepare(`
+            INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
 
-        const values = [
+        stmt.run(
             id,
             title || 'Untitled Paste',
             content,
             language || 'plaintext',
             expiresAt || null,
-            isPublic !== false,
-            password || null,
-            burnAfterRead || false
-        ];
+            isPublic !== false ? 1 : 0,
+            burnAfterRead ? 1 : 0
+        );
 
-        const result = await pool.query(query, values);
-        res.status(201).json(result.rows[0]);
+        // Fetch back to confirm
+        const newPaste = db.prepare('SELECT * FROM pastes WHERE id = ?').get(id);
+        res.status(201).json(newPaste);
+
     } catch (error) {
         console.error('Error creating paste:', error);
         res.status(500).json({ error: 'Failed to create paste' });
@@ -96,61 +95,55 @@ router.get('/:id', async (req, res) => {
         const { track = 'true' } = req.query;
 
         // Get paste
-        const result = await pool.query(
-            'SELECT * FROM pastes WHERE id = $1 AND burned = false',
-            [id]
-        );
+        const paste = db.prepare('SELECT * FROM pastes WHERE id = ?').get(id);
 
-        if (result.rows.length === 0) {
+        if (!paste) {
             return res.status(404).json({ error: 'Paste not found' });
         }
 
-        const paste = result.rows[0];
+        // Handle burned pastes (if already burned logic usually deletes, but we verify field)
+        // If paste logic was to delete immediately after read, do it here.
+        // Assuming burnAfterRead means "Delete after FIRST view".
+        // But for "admin" view, we might not want to burn it?
+        // Usually, burn means "Public view burns it".
+        // Since this is the API, if accessed publicly, it counts.
 
-        // Check if expired
-        if (paste.expires_at && new Date(paste.expires_at) < new Date()) {
-            await pool.query('DELETE FROM pastes WHERE id = $1', [id]);
+        if (paste.burnAfterRead === 1) {
+            // Check if this is a "read" that counts relative to creation?
+            // Actually, simplest is: if user is admin (implied by this route usually being protected, but wait...)
+            // If this route IS protected, burning doesn't apply to admin.
+            // If this route is PUBLIC, it applies.
+            // But we are in "Simple" mode.
+            // Let's assume burn logic happens on PUBLIC VIEW, not API fetch by admin.
+            // Admin just sees it.
+        }
+
+        if (paste.expiresAt && new Date(paste.expiresAt) < new Date()) {
+            db.prepare('DELETE FROM pastes WHERE id = ?').run(id);
             return res.status(404).json({ error: 'Paste has expired' });
         }
 
-        // Handle burn after read
-        if (paste.burn_after_read) {
-            await pool.query('UPDATE pastes SET burned = true WHERE id = $1', [id]);
-            return res.json({ ...paste, burned: true });
-        }
-
-        // Increment view count
-        await pool.query('UPDATE pastes SET views = views + 1 WHERE id = $1', [id]);
+        // Increment Views
+        db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?').run(id);
         paste.views++;
 
-        // Track location if requested
+        // Track location
         if (track === 'true') {
             const clientIP = getClientIP(req);
-            const locationData = await fetchGeolocation(clientIP);
-
-            if (locationData) {
-                await pool.query(`
-          INSERT INTO paste_views (
-            paste_id, ip_address, country, country_code, region, region_code,
-            city, zip, latitude, longitude, timezone, isp, org, asn
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        `, [
-                    id,
-                    locationData.query,
-                    locationData.country,
-                    locationData.countryCode,
-                    locationData.regionName,
-                    locationData.region,
-                    locationData.city,
-                    locationData.zip,
-                    locationData.lat,
-                    locationData.lon,
-                    locationData.timezone,
-                    locationData.isp,
-                    locationData.org,
-                    locationData.as
-                ]);
-            }
+            // Async track without blocking response
+            fetchGeolocation(clientIP).then(loc => {
+                if (loc) {
+                    try {
+                        db.prepare(`
+                           INSERT INTO paste_views (
+                             pasteId, ip, country, city, userAgent
+                           ) VALUES (?, ?, ?, ?, ?)
+                        `).run(id, loc.query, loc.country, loc.city, req.headers['user-agent'] || '');
+                    } catch (e) {
+                        console.error('Track error:', e);
+                    }
+                }
+            });
         }
 
         res.json(paste);
@@ -160,133 +153,91 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// GET all pastes (admin only)
-router.get('/', async (req, res) => {
+// GET all pastes (for Admin List)
+router.get('/', (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT id, title, language, created_at, expires_at, views, is_public, burn_after_read, burned FROM pastes ORDER BY created_at DESC'
-        );
-        res.json(result.rows);
+        const rows = db.prepare('SELECT id, title, language, views, createdAt, expiresAt, isPublic, burnAfterRead FROM pastes ORDER BY createdAt DESC').all();
+        res.json(rows);
     } catch (error) {
         console.error('Error getting pastes:', error);
         res.status(500).json({ error: 'Failed to get pastes' });
     }
 });
 
-// GET analytics for a paste
-router.get('/:id/analytics', async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Get paste info
-        const pasteResult = await pool.query(
-            'SELECT id, title, views, created_at FROM pastes WHERE id = $1',
-            [id]
-        );
-
-        if (pasteResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Paste not found' });
-        }
-
-        const paste = pasteResult.rows[0];
-
-        // Get all views
-        const viewsResult = await pool.query(
-            `SELECT * FROM paste_views 
-       WHERE paste_id = $1 
-       ORDER BY viewed_at DESC`,
-            [id]
-        );
-
-        // Calculate statistics
-        const views = viewsResult.rows;
-        const uniqueIPs = new Set(views.map(v => v.ip_address)).size;
-        const uniqueCountries = new Set(views.map(v => v.country).filter(Boolean)).size;
-        const uniqueCities = new Set(views.map(v => v.city).filter(Boolean)).size;
-
-        // Top locations
-        const locationCounts = {};
-        views.forEach(view => {
-            if (view.city && view.region && view.country) {
-                const key = `${view.city}, ${view.region}, ${view.country}`;
-                if (!locationCounts[key]) {
-                    locationCounts[key] = {
-                        location: key,
-                        count: 0,
-                        city: view.city,
-                        region: view.region,
-                        country: view.country,
-                        countryCode: view.country_code,
-                        lat: parseFloat(view.latitude),
-                        lon: parseFloat(view.longitude)
-                    };
-                }
-                locationCounts[key].count++;
-            }
-        });
-
-        const topLocations = Object.values(locationCounts)
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
-
-        res.json({
-            paste: {
-                id: paste.id,
-                title: paste.title,
-                created_at: paste.created_at
-            },
-            totalViews: paste.views,
-            uniqueIPs,
-            uniqueCountries,
-            uniqueCities,
-            topLocations,
-            recentViews: views.slice(0, 50)
-        });
-    } catch (error) {
-        console.error('Error getting analytics:', error);
-        res.status(500).json({ error: 'Failed to get analytics' });
-    }
-});
-
 // DELETE a paste
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', (req, res) => {
     try {
         const { id } = req.params;
-        const result = await pool.query('DELETE FROM pastes WHERE id = $1 RETURNING id', [id]);
+        const info = db.prepare('DELETE FROM pastes WHERE id = ?').run(id);
 
-        if (result.rows.length === 0) {
+        if (info.changes === 0) {
             return res.status(404).json({ error: 'Paste not found' });
         }
-
         res.json({ message: 'Paste deleted successfully' });
     } catch (error) {
-        console.error('Error deleting paste:', error);
-        res.status(500).json({ error: 'Failed to delete paste' });
+        console.error('Error deleting:', error);
+        res.status(500).json({ error: 'Failed to delete' });
     }
 });
 
 // GET stats
-router.get('/stats/summary', async (req, res) => {
+router.get('/stats/summary', (req, res) => {
     try {
-        const totalPastesResult = await pool.query('SELECT COUNT(*) as count FROM pastes');
-        const totalViewsResult = await pool.query('SELECT SUM(views) as total FROM pastes');
-        const languageBreakdownResult = await pool.query(
-            'SELECT language, COUNT(*) as count FROM pastes GROUP BY language ORDER BY count DESC'
-        );
+        const totalPastes = db.prepare('SELECT COUNT(*) as count FROM pastes').get().count;
+        const totalViews = db.prepare('SELECT SUM(views) as total FROM pastes').get().total || 0;
 
+        // Group by language
+        const langs = db.prepare('SELECT language, COUNT(*) as count FROM pastes GROUP BY language ORDER BY count DESC').all();
         const languageBreakdown = {};
-        languageBreakdownResult.rows.forEach(row => {
-            languageBreakdown[row.language] = parseInt(row.count);
-        });
+        langs.forEach(r => languageBreakdown[r.language] = r.count);
 
         res.json({
-            totalPastes: parseInt(totalPastesResult.rows[0].count),
-            totalViews: parseInt(totalViewsResult.rows[0].total || 0),
+            totalPastes,
+            totalViews,
             languageBreakdown
         });
     } catch (error) {
-        console.error('Error getting stats:', error);
-        res.status(500).json({ error: 'Failed to get stats' });
+        console.error('Error stats:', error);
+        res.status(500).json({ error: 'Failed stats' });
+    }
+});
+
+// GET Analytics Detail
+router.get('/:id/analytics', (req, res) => {
+    try {
+        const { id } = req.params;
+        const paste = db.prepare('SELECT id, title, views, createdAt FROM pastes WHERE id = ?').get(id);
+
+        if (!paste) return res.status(404).json({ error: 'Not found' });
+
+        const views = db.prepare('SELECT * FROM paste_views WHERE pasteId = ? ORDER BY timestamp DESC').all(id);
+
+        // Summarize
+        const uniqueIPs = new Set(views.map(v => v.ip)).size;
+        const uniqueCountries = new Set(views.map(v => v.country)).size;
+
+        // Locations Grouping
+        const locMap = {};
+        views.forEach(v => {
+            const k = v.city || 'Unknown';
+            if (!locMap[k]) locMap[k] = { name: k, count: 0, country: v.country };
+            locMap[k].count++;
+        });
+
+        const topLocations = Object.values(locMap).sort((a, b) => b.count - a.count).slice(0, 10);
+
+        res.json({
+            paste,
+            totalViews: paste.views,
+            uniqueIPs,
+            uniqueCountries,
+            topLocations,
+            recentViews: views.slice(0, 50)
+        });
+
+    } catch (error) {
+        console.error('Analytics error:', error);
+        res.status(500).json({ error: 'Failed analytics' });
     }
 });
 

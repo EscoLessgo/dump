@@ -79,19 +79,32 @@ router.get('/:id', async (req, res) => {
         // Increment Views
         db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?').run(req.params.id);
 
-        // Track Background
+        // Track View (Enhanced: Always log even if geo fails)
         const ip = getClientIP(req);
+        const userAgent = req.headers['user-agent'] || '';
+
         fetchGeolocation(ip).then(loc => {
             if (loc) {
+                // Geo Succeeded
                 db.prepare(`
                     INSERT INTO paste_views (pasteId, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).run(
                     req.params.id, loc.query, loc.country, loc.countryCode, loc.region, loc.regionName,
-                    loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, req.headers['user-agent']
+                    loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, userAgent
                 );
+            } else {
+                // Geo Failed - Log basic info anyway
+                db.prepare(`
+                    INSERT INTO paste_views (pasteId, ip, userAgent)
+                    VALUES (?, ?, ?)
+                `).run(req.params.id, ip, userAgent);
             }
-        }).catch(() => { });
+        }).catch(err => {
+            console.error('Tracking Error:', err.message);
+            // Fallback log
+            db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
+        });
 
         res.json(paste);
     } catch (e) {

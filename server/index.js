@@ -17,6 +17,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// REQUIRED FOR RAILWAY: Trust the proxy to allow secure cookies
+app.set('trust proxy', 1);
+
 // CORS configuration
 // CORS configuration
 const corsOptions = {

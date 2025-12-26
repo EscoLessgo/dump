@@ -92,14 +92,10 @@ app.use('/admin', (req, res, next) => {
     }
 
     // Require auth for everything else
-    /* TEMP DISABLED FOR RECOVERY
+    // Require auth for everything else
     if (!req.session || !req.session.isAdmin) {
         return res.redirect('/admin/login.html');
     }
-    */
-
-    // Auto-login everyone
-    if (req.session) req.session.isAdmin = true;
 
     next();
 }, express.static(path.join(__dirname, '..', 'admin')));

@@ -44,16 +44,36 @@ CREATE INDEX IF NOT EXISTS idx_pastes_expires_at ON pastes(expires_at);
 `;
 
 export async function migrate() {
-    const client = await pool.connect();
+    let client;
     try {
         console.log('🔄 Running database migrations...');
+        console.log('   Connecting to database...');
+
+        // Add timeout for connection
+        client = await Promise.race([
+            pool.connect(),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Database connection timeout after 10s')), 10000)
+            )
+        ]);
+
+        console.log('   ✓ Connected to database');
+        console.log('   Running schema creation...');
+
         await client.query(schema);
+
         console.log('✅ Database migrations completed successfully');
     } catch (error) {
-        console.error('❌ Migration failed:', error);
+        console.error('❌ Migration failed:');
+        console.error('   Error:', error.message);
+        if (error.code) console.error('   Code:', error.code);
+        if (error.detail) console.error('   Detail:', error.detail);
         throw error;
     } finally {
-        client.release();
+        if (client) {
+            client.release();
+            console.log('   Database client released');
+        }
     }
 }
 

@@ -1,4 +1,7 @@
 import pool from './index.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const schema = `
 -- Pastes table
@@ -44,6 +47,15 @@ CREATE INDEX IF NOT EXISTS idx_pastes_expires_at ON pastes(expires_at);
 `;
 
 export async function migrate() {
+    // Skip migration for SQLite (tables are auto-created)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const usePostgres = process.env.DATABASE_URL && isProduction;
+
+    if (!usePostgres) {
+        console.log('✅ Using SQLite - tables already initialized');
+        return;
+    }
+
     let client;
     try {
         console.log('🔄 Running database migrations...');

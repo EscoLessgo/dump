@@ -1,4 +1,4 @@
-import pool from './pool.js';
+import pool from './index.js';
 
 const schema = `
 -- Pastes table

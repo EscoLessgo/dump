@@ -1,35 +1,37 @@
-import pg from 'pg';
 import dotenv from 'dotenv';
-
 dotenv.config();
 
-const { Pool } = pg;
+// Use SQLite for local development, PostgreSQL for production
+const isProduction = process.env.NODE_ENV === 'production';
+const usePostgres = process.env.DATABASE_URL && isProduction;
 
-// Check if DATABASE_URL is set
-if (!process.env.DATABASE_URL) {
-    console.error('❌ ERROR: DATABASE_URL environment variable is not set!');
-    console.error('For Railway: Make sure you have added the PostgreSQL plugin to your project.');
-    console.error('The DATABASE_URL should be automatically provided by Railway.');
-    process.exit(1);
+let pool;
+
+if (usePostgres) {
+    console.log('🔗 Using PostgreSQL (Production)...');
+    const pg = await import('pg');
+    const { Pool } = pg.default;
+
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    });
+
+    pool.on('connect', () => {
+        console.log('✅ Connected to PostgreSQL database');
+    });
+
+    pool.on('error', (err) => {
+        console.error('❌ Unexpected database error:', err);
+        process.exit(-1);
+    });
+} else {
+    console.log('🔗 Using SQLite (Local Development)...');
+    console.log('   No PostgreSQL setup required! 🎉');
+    const sqlite = await import('./sqlite.js');
+    pool = sqlite.default;
 }
-
-console.log('🔗 Connecting to database...');
-console.log('   Environment:', process.env.NODE_ENV || 'development');
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? {
-        rejectUnauthorized: false
-    } : false
-});
-
-pool.on('connect', () => {
-    console.log('✅ Connected to PostgreSQL database');
-});
-
-pool.on('error', (err) => {
-    console.error('❌ Unexpected database error:', err);
-    process.exit(-1);
-});
 
 export default pool;

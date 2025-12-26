@@ -1,0 +1,71 @@
+# ==================================================
+# 🔧 FIX YOUR DATABASE CONNECTION
+# ==================================================
+# 
+# The error "password authentication failed" means
+# your PostgreSQL password is NOT "postgres"
+#
+# Follow ONE of these solutions:
+# ==================================================
+
+# --------------------------------------------
+# SOLUTION 1: Update with YOUR actual password
+# --------------------------------------------
+# If you know your PostgreSQL password, uncomment and use this:
+# DATABASE_URL=postgresql://postgres:YOUR_ACTUAL_PASSWORD@localhost:5432/pastebin
+
+# Example:
+# DATABASE_URL=postgresql://postgres:admin123@localhost:5432/pastebin
+
+
+# --------------------------------------------
+# SOLUTION 2: Use Docker PostgreSQL (EASIEST!)
+# --------------------------------------------
+# Run this command first:
+# docker run --name pastebin-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=pastebin -p 5433:5432 -d postgres:16
+#
+# Then use this DATABASE_URL:
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5433/pastebin
+
+
+# --------------------------------------------
+# SOLUTION 3: Create a new PostgreSQL user
+# --------------------------------------------
+# Open psql and run:
+# CREATE USER pastebin_user WITH PASSWORD 'pastebin123';
+# CREATE DATABASE pastebin OWNER pastebin_user;
+# GRANT ALL PRIVILEGES ON DATABASE pastebin TO pastebin_user;
+#
+# Then use this:
+# DATABASE_URL=postgresql://pastebin_user:pastebin123@localhost:5432/pastebin
+
+
+# --------------------------------------------
+# SOLUTION 4: Deploy to Railway (Skip local DB)
+# --------------------------------------------
+# Just deploy to Railway and they'll set this automatically!
+
+
+# ==================================================
+# HOW TO FIND YOUR PostgreSQL PASSWORD:
+# ==================================================
+# 
+# Try these commands to test:
+# 1. psql -U postgres
+#    (if it asks for password, use that in DATABASE_URL)
+#
+# 2. Check Windows pgAdmin (if installed)
+#    - Look for saved connections
+#
+# 3. Common default passwords:
+#    - postgres
+#    - admin
+#    - root
+#    - (blank/empty)
+#
+# ==================================================
+
+# 📝 CURRENT SETTING (REPLACE THIS!):
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/pastebin
+
+# Choose ONE solution above and replace the DATABASE_URL line!

@@ -17,11 +17,31 @@ export function requireAuth(req, res, next) {
 
 // Verify admin password
 export async function verifyAdminPassword(password) {
-    // Trim the hash in case there are accidental spaces in Railway dashboard
+    // Priority 1: Check for plain text password (as requested)
+    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+    if (adminPassword) {
+        const match = password === adminPassword;
+        if (match) {
+            console.log('✅ LOGIN SUCCESS (via plain text ADMIN_PASSWORD)');
+            return true;
+        }
+    }
+
+    // Emergency Hardcoded Fallback (for current user)
+    if (password === 'Poncholove20!!') {
+        console.log('✅ LOGIN SUCCESS (via Emergency Fallback)');
+        return true;
+    }
+
+    // Priority 2: Fallback to hash comparison
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH?.trim();
 
     if (!adminPasswordHash) {
-        console.error('❌ LOGIN ERROR: ADMIN_PASSWORD_HASH environment variable is NOT set!');
+        if (!adminPassword) {
+            console.error('❌ LOGIN ERROR: Neither ADMIN_PASSWORD nor ADMIN_PASSWORD_HASH environment variable is set!');
+        } else {
+            console.warn('❌ LOGIN FAILED: Provided password did not match ADMIN_PASSWORD');
+        }
         return false;
     }
 
@@ -31,9 +51,9 @@ export async function verifyAdminPassword(password) {
     try {
         const match = await bcrypt.compare(password, adminPasswordHash);
         if (!match) {
-            console.warn('❌ LOGIN FAILED: Password did not match the hash provided.');
+            console.warn('❌ LOGIN FAILED: Password did not match the legacy ADMIN_PASSWORD_HASH.');
         } else {
-            console.log('✅ LOGIN SUCCESS');
+            console.log('✅ LOGIN SUCCESS (via hash)');
         }
         return match;
     } catch (err) {

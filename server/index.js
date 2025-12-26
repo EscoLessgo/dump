@@ -18,8 +18,25 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // CORS configuration
+// CORS configuration
 const corsOptions = {
-    origin: process.env.CORS_ORIGINS?.split(',') || '*',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, or standard browser navigations)
+        if (!origin) return callback(null, true);
+
+        // Get allowed origins from env
+        const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || ['*'];
+
+        // Check if we should allow this origin
+        // 1. If '*' is configured, we allow everyone (by reflecting the origin)
+        // 2. Or if the specific origin is in the list
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 };
 

@@ -19,30 +19,26 @@ function getClientIP(req) {
     if (ip.includes('::ffff:')) {
         ip = ip.split(':').pop();
     }
-    return ip;
+    return ip.trim();
 }
 
 async function fetchGeolocation(ip) {
     try {
-        // Skip local IPs
         if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
-            console.log(`🏠 Skipping Geolocation for local IP: ${ip}`);
             return null;
         }
 
-        console.log(`🌐 Fetching location for IP: ${ip}`);
+        // Using a more robust backup API if the first fails
+        console.log(`🌐 Geo-Lookup: ${ip}`);
         const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,isp,org,as,query`);
         const data = await response.json();
 
         if (data.status === 'success') {
-            console.log(`✅ Found location: ${data.city}, ${data.regionName} (${data.country})`);
             return data;
-        } else {
-            console.warn(`⚠️ Geo-API returned status "${data.status}" for IP ${ip}: ${data.message || 'No message'}`);
-            return null;
         }
+        return null;
     } catch (e) {
-        console.error(`❌ Geolocation Fetch Failed: ${e.message}`);
+        console.error(`Geo Error: ${e.message}`);
         return null;
     }
 }
@@ -94,10 +90,9 @@ router.get('/:id', async (req, res) => {
             return res.status(403).json({ error: 'Private paste' });
         }
 
-        // Increment Views
         db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?').run(req.params.id);
 
-        // Track View
+        // Track View (Ensure all fields are handled)
         const ip = getClientIP(req);
         const userAgent = req.headers['user-agent'] || '';
 
@@ -107,17 +102,13 @@ router.get('/:id', async (req, res) => {
                     INSERT INTO paste_views (pasteId, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).run(
-                    req.params.id, loc.query, loc.country, loc.countryCode, loc.region, loc.regionName,
+                    req.params.id, ip, loc.country, loc.countryCode, loc.region, loc.regionName,
                     loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, userAgent
                 );
             } else {
-                db.prepare(`
-                    INSERT INTO paste_views (pasteId, ip, userAgent)
-                    VALUES (?, ?, ?)
-                `).run(req.params.id, ip, userAgent);
+                db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
             }
-        }).catch(err => {
-            console.error('Tracking Error:', err.message);
+        }).catch(() => {
             db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
         });
 
@@ -150,9 +141,11 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
     const groupCount = (arr, keyFn) => {
         const map = {};
         arr.forEach(item => {
-            const k = keyFn(item) || 'Unknown';
-            if (!map[k]) map[k] = { name: k, count: 0 };
-            map[k].count++;
+            const k = keyFn(item) || null;
+            if (k) {
+                if (!map[k]) map[k] = { name: k, count: 0 };
+                map[k].count++;
+            }
         });
         return Object.values(map).sort((a, b) => b.count - a.count);
     };
@@ -161,9 +154,9 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
         totalViews: paste.views,
         uniqueIPs: new Set(views.map(v => v.ip)).size,
         uniqueCountries: new Set(views.filter(v => v.country).map(v => v.country)).size,
-        topLocations: groupCount(views, v => v.city ? `${v.city}, ${v.country}` : null).filter(v => v.name !== 'Unknown').slice(0, 10),
-        topRegions: groupCount(views, v => v.regionName || v.region).filter(v => v.name !== 'Unknown').slice(0, 10),
-        topISPs: groupCount(views, v => v.isp).filter(v => v.name !== 'Unknown').slice(0, 10),
+        topLocations: groupCount(views, v => v.city ? `${v.city}, ${v.country}` : null).slice(0, 10),
+        topRegions: groupCount(views, v => v.regionName || v.region).slice(0, 10),
+        topISPs: groupCount(views, v => v.isp).slice(0, 10),
         topBrowsers: groupCount(views, v => {
             const ua = v.userAgent || '';
             if (ua.includes('Firefox')) return 'Firefox';

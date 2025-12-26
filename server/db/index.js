@@ -64,7 +64,7 @@ function migrateTable(tableName, columns) {
     }
 }
 
-// Ensure all analytics columns exist
+// Ensure ALL analytics columns exist (CRITICAL FIX)
 migrateTable('paste_views', [
     { name: 'country', type: 'TEXT' },
     { name: 'countryCode', type: 'TEXT' },
@@ -72,18 +72,21 @@ migrateTable('paste_views', [
     { name: 'regionName', type: 'TEXT' },
     { name: 'city', type: 'TEXT' },
     { name: 'zip', type: 'TEXT' },
+    { name: 'lat', type: 'REAL' },
+    { name: 'lon', type: 'REAL' },
     { name: 'isp', type: 'TEXT' },
     { name: 'org', type: 'TEXT' },
-    { name: 'asName', type: 'TEXT' }
+    { name: 'asName', type: 'TEXT' },
+    { name: 'userAgent', type: 'TEXT' }
 ]);
 
-// Ensure all paste columns exist (fixes "can't post" issues)
+// Ensure all paste columns exist
 migrateTable('pastes', [
     { name: 'burnAfterRead', type: 'INTEGER DEFAULT 0' },
     { name: 'isPublic', type: 'INTEGER DEFAULT 1' },
     { name: 'expiresAt', type: 'DATETIME' }
 ]);
 
-console.log('✅ SQLite Database Migrations Complete');
+console.log('✅ SQLite Database Migrations Complete (All columns verified)');
 
 export default db;

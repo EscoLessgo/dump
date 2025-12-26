@@ -52,9 +52,18 @@ rawModal.addEventListener('click', (e) => {
 
 // Functions
 async function loadPaste() {
-    // Get paste ID from URL
+    // Get paste ID from URL params or path
     const urlParams = new URLSearchParams(window.location.search);
-    const pasteId = urlParams.get('id');
+    let pasteId = urlParams.get('id');
+
+    // If not in query, check path (e.g., /v/ID)
+    if (!pasteId) {
+        const pathParts = window.location.pathname.split('/');
+        // Assuming path is /v/ID or /view/ID
+        if (pathParts[1] === 'v' || pathParts[1] === 'view') {
+            pasteId = pathParts[2];
+        }
+    }
 
     if (!pasteId) {
         showNotFound();

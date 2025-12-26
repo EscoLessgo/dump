@@ -32,7 +32,7 @@ if (createPasteBtn) createPasteBtn.addEventListener('click', createPaste);
 if (clearBtn) clearBtn.addEventListener('click', clearForm);
 if (refreshBtn) refreshBtn.addEventListener('click', loadPasteList);
 if (viewPublicBtn) viewPublicBtn.addEventListener('click', () => {
-    window.open('/public/index.html', '_blank');
+    window.open('/', '_blank');
 });
 if (statsBtn) statsBtn.addEventListener('click', showStats);
 
@@ -100,7 +100,7 @@ async function createPaste() {
         const id = await storage.createPaste(content, config);
 
         // Show success modal
-        const publicUrl = `${window.location.origin}/public/index.html?id=${id}`;
+        const publicUrl = `${window.location.origin}/v/${id}`;
         pasteUrl.value = publicUrl;
         successModal.classList.add('active');
 
@@ -359,7 +359,7 @@ function formatDateTime(dateString) {
 }
 
 function viewPaste(id) {
-    window.open(`/public/index.html?id=${id}`, '_blank');
+    window.open(`/v/${id}`, '_blank');
 }
 
 async function showStats() {

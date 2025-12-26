@@ -4,185 +4,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PasteBin Pro - View Paste</title>
-    <meta name="description" content="View and share code snippets with beautiful syntax highlighting">
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <title>Public Pastes - PasteBin Pro</title>
+    <link rel="stylesheet" href="public/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: white;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #00f5ff, #7b42ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+        }
+
+        .paste-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .paste-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            color: white;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .paste-item:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #00f5ff;
+        }
+
+        .paste-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .paste-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .badge {
+            background: #7b42ff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="background-gradient"></div>
-    <div class="grain-overlay"></div>
-
     <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <path
-                            d="M8 4L24 4C26.2091 4 28 5.79086 28 8V24C28 26.2091 26.2091 28 24 28H8C5.79086 28 4 26.2091 4 24V8C4 5.79086 5.79086 4 8 4Z"
-                            stroke="url(#gradient1)" stroke-width="2" />
-                        <path d="M10 12H22M10 16H22M10 20H18" stroke="url(#gradient2)" stroke-width="2"
-                            stroke-linecap="round" />
-                        <defs>
-                            <linearGradient id="gradient1" x1="4" y1="4" x2="28" y2="28">
-                                <stop stop-color="#00f5ff" />
-                                <stop offset="1" stop-color="#7b42ff" />
-                            </linearGradient>
-                            <linearGradient id="gradient2" x1="10" y1="12" x2="22" y2="20">
-                                <stop stop-color="#ff006e" />
-                                <stop offset="1" stop-color="#ffbe0b" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <div class="logo-text">
-                    <h1>PasteBin Pro</h1>
-                    <span class="badge">Public View</span>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button id="rawBtn" class="btn btn-glass">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M3 3H17M3 7H17M3 11H17M3 15H17" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" />
-                    </svg>
-                    Raw
-                </button>
-                <button id="copyBtn" class="btn btn-secondary">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2" />
-                        <path d="M13 3H5C3.89543 3 3 3.89543 3 5V13" stroke="currentColor" stroke-width="2" />
-                    </svg>
-                    Copy
-                </button>
-            </div>
+        <header>
+            <h1>Public Pastes</h1>
         </header>
-
-        <!-- Main Content -->
-        <main id="mainContent">
-            <!-- Loading State -->
-            <div id="loadingState" class="state-container">
-                <div class="loader"></div>
-                <p>Loading paste...</p>
-            </div>
-
-            <!-- Not Found State -->
-            <div id="notFoundState" class="state-container" style="display: none;">
-                <div class="error-icon">
-                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                        <circle cx="40" cy="40" r="36" stroke="currentColor" stroke-width="3" />
-                        <path d="M30 30L50 50M50 30L30 50" stroke="currentColor" stroke-width="3"
-                            stroke-linecap="round" />
-                    </svg>
-                </div>
-                <h2>Paste Not Found</h2>
-                <p>This paste doesn't exist, has expired, or has been deleted.</p>
-            </div>
-
-            <!-- Burned State -->
-            <div id="burnedState" class="state-container" style="display: none;">
-                <div class="warning-icon">
-                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                        <path d="M40 10L65 55H15L40 10Z" stroke="currentColor" stroke-width="3" />
-                        <path d="M40 30V42M40 50V52" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-                    </svg>
-                </div>
-                <h2>Paste Burned</h2>
-                <p>This was a "burn after read" paste and has been permanently deleted.</p>
-            </div>
-
-            <!-- Paste View -->
-            <div id="pasteView" style="display: none;">
-                <div class="paste-header">
-                    <div class="paste-info">
-                        <h2 id="pasteTitle">Loading...</h2>
-                        <div class="paste-meta">
-                            <span class="language-tag" id="pasteLanguage">plaintext</span>
-                            <span class="meta-item">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path
-                                        d="M8 2C4 2 1.38 5.69 0.8 8c.58 2.31 3.2 6 7.2 6s6.62-3.69 7.2-6c-.58-2.31-3.2-6-7.2-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6.4c-1.33 0-2.4 1.07-2.4 2.4s1.07 2.4 2.4 2.4 2.4-1.07 2.4-2.4-1.07-2.4-2.4-2.4z"
-                                        fill="currentColor" />
-                                </svg>
-                                <span id="pasteViews">0 views</span>
-                            </span>
-                            <span class="meta-item">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12zm0-7.5v3.75M8 11.25h.008"
-                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                                </svg>
-                                <span id="pasteDate">Just now</span>
-                            </span>
-                            <span class="meta-item" id="burnNotice" style="display: none;">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M8 2L10 6L14 7L11 10L12 14L8 12L4 14L5 10L2 7L6 6L8 2Z"
-                                        fill="currentColor" />
-                                </svg>
-                                <span>This paste will be deleted after viewing</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="code-container">
-                    <div class="code-header">
-                        <div class="code-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                        <div class="code-title" id="codeTitle">code.txt</div>
-                        <div class="code-actions">
-                            <button id="toggleLineNumbers" class="code-action-btn" title="Toggle line numbers">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M2 4h2M2 8h2M2 12h2M6 4h8M6 8h8M6 12h8" stroke="currentColor"
-                                        stroke-width="1.5" stroke-linecap="round" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <pre id="pasteContentContainer"><code id="pasteContent" class="hljs"></code></pre>
-                </div>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer" id="footer" style="display: none;">
-            <p>Created with <span class="gradient-text">PasteBin Pro</span></p>
-            <div class="footer-links">
-                <a href="#" id="shareBtn">Share</a>
-                <a href="#" id="reportBtn">Report</a>
-            </div>
-        </footer>
-    </div>
-
-    <!-- Raw View Modal -->
-    <div id="rawModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>Raw Content</h3>
-                <button id="closeRawBtn" class="btn-icon">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M14 4L4 14M4 4L14 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                </button>
-            </div>
-            <textarea id="rawContent" class="raw-textarea" readonly></textarea>
-            <button id="copyRawBtn" class="btn btn-primary btn-large">Copy Raw Content</button>
+        <div id="pasteList" class="paste-list">
+            <p>Loading pastes...</p>
         </div>
     </div>
 
-    <script src="../shared/api.js"></script>
-    <script src="app.js"></script>
+    <script>
+        async function loadPastes() {
+            try {
+                const res = await fetch('/api/pastes/public-list');
+                const adminRes = await fetch('/api/auth/status');
+                const auth = await adminRes.json();
+
+                // If admin, maybe fetch more? No, let's keep it simple for now.
+
+                const pastes = await res.json();
+                const container = document.getElementById('pasteList');
+
+                if (pastes.length === 0) {
+                    container.innerHTML = '<p>No public pastes found.</p>';
+                    return;
+                }
+
+                container.innerHTML = pastes.map(p => `
+                    <a href="/v/${p.id}" class="paste-item">
+                        <div>
+                            <div class="paste-title">${p.title || 'Untitled'}</div>
+                            <div class="paste-meta">Created ${new Date(p.createdAt).toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <span class="badge">${p.views} views</span>
+                        </div>
+                    </a>
+                `).join('');
+            } catch (e) {
+                document.getElementById('pasteList').innerHTML = '<p>Error loading pastes.</p>';
+            }
+        }
+        loadPastes();
+    </script>
 </body>
 
 </html>

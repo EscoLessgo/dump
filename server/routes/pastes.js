@@ -127,9 +127,24 @@ router.get('/:id', async (req, res) => {
                     try {
                         db.prepare(`
                            INSERT INTO paste_views (
-                             pasteId, ip, country, city, userAgent
-                           ) VALUES (?, ?, ?, ?, ?)
-                        `).run(id, loc.query, loc.country, loc.city, req.headers['user-agent'] || '');
+                             pasteId, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent
+                           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        `).run(
+                            id,
+                            loc.query,
+                            loc.country,
+                            loc.countryCode,
+                            loc.region,
+                            loc.regionName,
+                            loc.city,
+                            loc.zip,
+                            loc.lat,
+                            loc.lon,
+                            loc.isp,
+                            loc.org,
+                            loc.as,
+                            req.headers['user-agent'] || ''
+                        );
                     } catch (e) {
                         console.error('Track error:', e);
                     }
@@ -212,15 +227,31 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
         const uniqueIPs = new Set(views.map(v => v.ip)).size;
         const uniqueCountries = new Set(views.map(v => v.country)).size;
 
-        // Locations Grouping
-        const locMap = {};
-        views.forEach(v => {
-            const k = v.city || 'Unknown';
-            if (!locMap[k]) locMap[k] = { name: k, count: 0, country: v.country };
-            locMap[k].count++;
-        });
+        // Grouping helper
+        const groupCount = (arr, keyFn) => {
+            const map = {};
+            arr.forEach(item => {
+                const k = keyFn(item) || 'Unknown';
+                if (!map[k]) map[k] = { name: k, count: 0 };
+                map[k].count++;
+            });
+            return Object.values(map).sort((a, b) => b.count - a.count);
+        };
 
-        const topLocations = Object.values(locMap).sort((a, b) => b.count - a.count).slice(0, 10);
+        const topLocations = groupCount(views, v => v.city ? `${v.city}, ${v.country}` : v.country).slice(0, 10);
+        const topRegions = groupCount(views, v => v.regionName || v.region).slice(0, 10);
+        const topISPs = groupCount(views, v => v.isp).slice(0, 10);
+
+        // Simple User Agent Parsing (Browser/OS)
+        const topBrowsers = groupCount(views, v => {
+            const ua = v.userAgent || '';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Edg/')) return 'Edge';
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Safari')) return 'Safari';
+            if (ua.includes('MSIE') || ua.includes('Trident/')) return 'Internet Explorer';
+            return 'Other';
+        }).slice(0, 5);
 
         res.json({
             paste,
@@ -228,6 +259,9 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
             uniqueIPs,
             uniqueCountries,
             topLocations,
+            topRegions,
+            topISPs,
+            topBrowsers,
             recentViews: views.slice(0, 50)
         });
 

@@ -211,71 +211,120 @@ async function showAnalytics(pasteId) {
         const uniqueIPs = new Set(analytics.recentViews?.map(v => v.ip) || []).size;
 
         let html = `
-            <div style="margin-bottom: 24px">
-                <h4 style="font-size: 1.25rem; margin-bottom: 8px">${escapeHtml(paste.title)}</h4>
-                <p style="color: var(--text-tertiary)">Paste ID: <code>${pasteId}</code></p>
+            <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                <h4 style="font-size: 1.5rem; margin-bottom: 8px; color: var(--primary-start)">${escapeHtml(paste.title)}</h4>
+                <div style="display: flex; gap: 16px; font-size: 0.875rem; color: var(--text-tertiary)">
+                    <span>ID: <code>${pasteId}</code></span>
+                    <span>Created: ${formatDateTime(paste.createdAt)}</span>
+                </div>
             </div>
             
-            <div class="stats-grid" style="margin-bottom: 24px">
+            <div class="stats-grid" style="margin-bottom: 32px">
                 <div class="stat-card">
                     <div class="stat-value">${analytics.totalViews}</div>
                     <div class="stat-label">Total Views</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${uniqueIPs}</div>
-                    <div class="stat-label">Unique IPs</div>
+                    <div class="stat-value">${analytics.uniqueIPs}</div>
+                    <div class="stat-label">Unique Visitors</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${analytics.uniqueCountries || 0}</div>
                     <div class="stat-label">Countries</div>
                 </div>
             </div>
-        `;
 
-        if (analytics.topLocations && analytics.topLocations.length > 0) {
-            html += `
-                <h4 style="font-size: 1.1rem; margin: 24px 0 16px 0; color: var(--text-secondary)">📍 Top Locations</h4>
-                <div class="location-list">
-                    ${analytics.topLocations.map(loc => `
-                        <div class="location-item">
-                            <div class="location-flag">${getFlagEmoji(loc.countryCode)}</div>
-                            <div class="location-info">
-                                <div class="location-name">${escapeHtml(loc.name)}</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+                <div>
+                    <h4 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--secondary-start)">📍 Top Cities</h4>
+                    <div class="location-list">
+                        ${(analytics.topLocations || []).map(loc => `
+                            <div class="location-item" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05)">
+                                <div style="display: flex; justify-content: space-between; align-items: center">
+                                    <span style="font-weight: 500">${escapeHtml(loc.name)}</span>
+                                    <span class="badge" style="background: rgba(0,245,255,0.1); color: var(--primary-start)">${loc.count}</span>
+                                </div>
                             </div>
-                            <div class="location-count">${loc.count} views</div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
-            `;
-        }
+                <div>
+                    <h4 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--secondary-start)">🏢 Top ISPs</h4>
+                    <div class="location-list">
+                        ${(analytics.topISPs || []).map(isp => `
+                            <div class="location-item" style="padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05)">
+                                <div style="display: flex; justify-content: space-between; align-items: center">
+                                    <span style="font-weight: 500; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;" title="${escapeHtml(isp.name)}">${escapeHtml(isp.name)}</span>
+                                    <span class="badge" style="background: rgba(255,0,110,0.1); color: var(--secondary-start)">${isp.count}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
 
-        if (analytics.recentViews && analytics.recentViews.length > 0) {
-            html += `
-                <h4 style="font-size: 1.1rem; margin: 24px 0 16px 0; color: var(--text-secondary)">📊 Recent Views</h4>
-                <div class="views-table">
-                    <table style="width: 100%; border-collapse: collapse">
-                        <thead>
-                            <tr style="border-bottom: 1px solid var(--border)">
-                                <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">Time</th>
-                                <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">Location</th>
-                                <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">IP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${analytics.recentViews.map(view => `
-                                <tr style="border-bottom: 1px solid var(--border)">
-                                    <td style="padding: 12px; font-size: 0.875rem">${formatDateTime(view.timestamp)}</td>
-                                    <td style="padding: 12px; font-size: 0.875rem">
-                                        ${escapeHtml(view.city)}, ${escapeHtml(view.country)}
-                                    </td>
-                                    <td style="padding: 12px; font-size: 0.875rem; font-family: var(--font-mono); color: var(--text-tertiary)">${view.ip}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+                <div>
+                    <h4 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--secondary-start)">🗺️ Top Regions</h4>
+                    <div class="location-list">
+                        ${(analytics.topRegions || []).map(reg => `
+                            <div class="location-item" style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05)">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>${escapeHtml(reg.name)}</span>
+                                    <span style="color: var(--text-tertiary)">${reg.count}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
-            `;
-        }
+                <div>
+                    <h4 style="font-size: 1.1rem; margin-bottom: 16px; color: var(--secondary-start)">💻 Browsers</h4>
+                    <div class="location-list">
+                        ${(analytics.topBrowsers || []).map(br => `
+                            <div class="location-item" style="padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05)">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>${escapeHtml(br.name)}</span>
+                                    <span style="color: var(--text-tertiary)">${br.count}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <h4 style="font-size: 1.2rem; margin: 32px 0 16px 0; color: var(--primary-start); border-top: 1px solid var(--border); pt: 24px;">📋 Detailed View Log</h4>
+            <div class="views-table" style="overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--border)">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05)">
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Timestamp</th>
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">IP Address</th>
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Location</th>
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Zip</th>
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">ISP / Network</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${(analytics.recentViews || []).map(view => `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05)">
+                                <td style="padding: 12px; white-space: nowrap">${formatDateTime(view.timestamp)}</td>
+                                <td style="padding: 12px; font-family: var(--font-mono)">${view.ip}</td>
+                                <td style="padding: 12px">
+                                    ${getFlagEmoji(view.countryCode)} ${escapeHtml(view.city)}, ${escapeHtml(view.regionName)}<br>
+                                    <small style="color: var(--text-tertiary)">${escapeHtml(view.country)} (${view.lat}, ${view.lon})</small>
+                                </td>
+                                <td style="padding: 12px">${view.zip || '-'}</td>
+                                <td style="padding: 12px">
+                                    <span style="color: var(--secondary-start)">${escapeHtml(view.isp)}</span><br>
+                                    <small style="color: var(--text-tertiary)">${escapeHtml(view.org || view.asName || '')}</small>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        ${(!analytics.recentViews || analytics.recentViews.length === 0) ? '<tr><td colspan="5" style="padding: 20px; text-align: center">No view data available yet.</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+        `;
 
         analyticsContent.innerHTML = html;
         analyticsModal.classList.add('active');

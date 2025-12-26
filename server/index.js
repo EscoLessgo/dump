@@ -69,8 +69,8 @@ app.use((req, res, next) => {
 // Auth routes (public - for login)
 app.use('/api/auth', authRouter);
 
-// API Routes (protected - requires admin login)
-app.use('/api/pastes', requireAuth, pastesRouter);
+// API Routes (managed within routers)
+app.use('/api/pastes', pastesRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

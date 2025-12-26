@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db/index.js';
 import fetch from 'node-fetch';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -44,8 +45,8 @@ async function fetchGeolocation(ip) {
     }
 }
 
-// CREATE a new paste
-router.post('/', async (req, res) => {
+// CREATE a new paste (Protected)
+router.post('/', requireAuth, async (req, res) => {
     try {
         const { title, content, language, expiresAt, isPublic, burnAfterRead } = req.body;
 
@@ -88,7 +89,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET a paste by ID
+// GET a paste by ID (Public with visibility check)
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -101,23 +102,13 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Paste not found' });
         }
 
-        // Handle burned pastes (if already burned logic usually deletes, but we verify field)
-        // If paste logic was to delete immediately after read, do it here.
-        // Assuming burnAfterRead means "Delete after FIRST view".
-        // But for "admin" view, we might not want to burn it?
-        // Usually, burn means "Public view burns it".
-        // Since this is the API, if accessed publicly, it counts.
-
-        if (paste.burnAfterRead === 1) {
-            // Check if this is a "read" that counts relative to creation?
-            // Actually, simplest is: if user is admin (implied by this route usually being protected, but wait...)
-            // If this route IS protected, burning doesn't apply to admin.
-            // If this route is PUBLIC, it applies.
-            // But we are in "Simple" mode.
-            // Let's assume burn logic happens on PUBLIC VIEW, not API fetch by admin.
-            // Admin just sees it.
+        // Visibility Check: If not public, only admin can see it
+        const isAdmin = req.session && req.session.isAdmin;
+        if (paste.isPublic === 0 && !isAdmin) {
+            return res.status(403).json({ error: 'Access denied. This paste is private.' });
         }
 
+        // Handle expired pastes
         if (paste.expiresAt && new Date(paste.expiresAt) < new Date()) {
             db.prepare('DELETE FROM pastes WHERE id = ?').run(id);
             return res.status(404).json({ error: 'Paste has expired' });
@@ -146,6 +137,11 @@ router.get('/:id', async (req, res) => {
             });
         }
 
+        // Handle burn after read (Delete if not admin)
+        if (paste.burnAfterRead === 1 && !isAdmin) {
+            db.prepare('DELETE FROM pastes WHERE id = ?').run(id);
+        }
+
         res.json(paste);
     } catch (error) {
         console.error('Error getting paste:', error);
@@ -153,8 +149,8 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// GET all pastes (for Admin List)
-router.get('/', (req, res) => {
+// GET all pastes (Protected - for Admin List)
+router.get('/', requireAuth, (req, res) => {
     try {
         const rows = db.prepare('SELECT id, title, language, views, createdAt, expiresAt, isPublic, burnAfterRead FROM pastes ORDER BY createdAt DESC').all();
         res.json(rows);
@@ -164,8 +160,8 @@ router.get('/', (req, res) => {
     }
 });
 
-// DELETE a paste
-router.delete('/:id', (req, res) => {
+// DELETE a paste (Protected)
+router.delete('/:id', requireAuth, (req, res) => {
     try {
         const { id } = req.params;
         const info = db.prepare('DELETE FROM pastes WHERE id = ?').run(id);
@@ -180,8 +176,8 @@ router.delete('/:id', (req, res) => {
     }
 });
 
-// GET stats
-router.get('/stats/summary', (req, res) => {
+// GET stats (Protected)
+router.get('/stats/summary', requireAuth, (req, res) => {
     try {
         const totalPastes = db.prepare('SELECT COUNT(*) as count FROM pastes').get().count;
         const totalViews = db.prepare('SELECT SUM(views) as total FROM pastes').get().total || 0;
@@ -202,8 +198,8 @@ router.get('/stats/summary', (req, res) => {
     }
 });
 
-// GET Analytics Detail
-router.get('/:id/analytics', (req, res) => {
+// GET Analytics Detail (Protected)
+router.get('/:id/analytics', requireAuth, (req, res) => {
     try {
         const { id } = req.params;
         const paste = db.prepare('SELECT id, title, views, createdAt FROM pastes WHERE id = ?').get(id);

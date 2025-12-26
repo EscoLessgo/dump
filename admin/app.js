@@ -23,53 +23,64 @@ const copyUrlBtn = document.getElementById('copyUrlBtn');
 const statsContent = document.getElementById('statsContent');
 
 // Initialize
-loadPasteList();
+window.addEventListener('DOMContentLoaded', async () => {
+    await loadPasteList();
+});
 
 // Event Listeners
-createPasteBtn.addEventListener('click', createPaste);
-clearBtn.addEventListener('click', clearForm);
-refreshBtn.addEventListener('click', loadPasteList);
-viewPublicBtn.addEventListener('click', () => {
-    window.open('../public/index.html', '_blank');
+if (createPasteBtn) createPasteBtn.addEventListener('click', createPaste);
+if (clearBtn) clearBtn.addEventListener('click', clearForm);
+if (refreshBtn) refreshBtn.addEventListener('click', loadPasteList);
+if (viewPublicBtn) viewPublicBtn.addEventListener('click', () => {
+    window.open('/public/index.html', '_blank');
 });
-statsBtn.addEventListener('click', showStats);
-closeModalBtn.addEventListener('click', () => {
+if (statsBtn) statsBtn.addEventListener('click', showStats);
+
+if (closeModalBtn) closeModalBtn.addEventListener('click', () => {
     successModal.classList.remove('active');
 });
-closeStatsBtn.addEventListener('click', () => {
+if (closeStatsBtn) closeStatsBtn.addEventListener('click', () => {
     statsModal.classList.remove('active');
 });
-copyUrlBtn.addEventListener('click', copyUrl);
+if (copyUrlBtn) copyUrlBtn.addEventListener('click', copyUrl);
 
 // Close modals on background click
-successModal.addEventListener('click', (e) => {
-    if (e.target === successModal) {
-        successModal.classList.remove('active');
-    }
-});
+if (successModal) {
+    successModal.addEventListener('click', (e) => {
+        if (e.target === successModal) {
+            successModal.classList.remove('active');
+        }
+    });
+}
 
-statsModal.addEventListener('click', (e) => {
-    if (e.target === statsModal) {
-        statsModal.classList.remove('active');
-    }
-});
+if (statsModal) {
+    statsModal.addEventListener('click', (e) => {
+        if (e.target === statsModal) {
+            statsModal.classList.remove('active');
+        }
+    });
+}
 
 // Analytics modal
 const analyticsModal = document.getElementById('analyticsModal');
 const closeAnalyticsBtn = document.getElementById('closeAnalyticsBtn');
 
-closeAnalyticsBtn.addEventListener('click', () => {
-    analyticsModal.classList.remove('active');
-});
-
-analyticsModal.addEventListener('click', (e) => {
-    if (e.target === analyticsModal) {
+if (closeAnalyticsBtn) {
+    closeAnalyticsBtn.addEventListener('click', () => {
         analyticsModal.classList.remove('active');
-    }
-});
+    });
+}
+
+if (analyticsModal) {
+    analyticsModal.addEventListener('click', (e) => {
+        if (e.target === analyticsModal) {
+            analyticsModal.classList.remove('active');
+        }
+    });
+}
 
 // Functions
-function createPaste() {
+async function createPaste() {
     const content = pasteContent.value.trim();
 
     if (!content) {
@@ -85,22 +96,27 @@ function createPaste() {
         expiresAt: calculateExpiration(pasteExpiration.value)
     };
 
-    const id = storage.createPaste(content, config);
+    try {
+        const id = await storage.createPaste(content, config);
 
-    // Show success modal
-    const publicUrl = `${window.location.origin}/pastebin-dual/public/index.html?id=${id}`;
-    pasteUrl.value = publicUrl;
-    successModal.classList.add('active');
+        // Show success modal
+        const publicUrl = `${window.location.origin}/public/index.html?id=${id}`;
+        pasteUrl.value = publicUrl;
+        successModal.classList.add('active');
 
-    // Add animation to the button
-    createPasteBtn.style.transform = 'scale(0.95)';
-    setTimeout(() => {
-        createPasteBtn.style.transform = '';
-    }, 150);
+        // Add animation to the button
+        createPasteBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            createPasteBtn.style.transform = '';
+        }, 150);
 
-    // Clear form and reload list
-    clearForm();
-    loadPasteList();
+        // Clear form and reload list
+        clearForm();
+        await loadPasteList();
+    } catch (error) {
+        alert('Failed to create paste. Error: ' + error.message);
+        console.error(error);
+    }
 }
 
 function calculateExpiration(expirationValue) {
@@ -127,151 +143,156 @@ function clearForm() {
     isPublic.checked = true;
 }
 
-function loadPasteList() {
-    const pastes = storage.getAllPastes();
+async function loadPasteList() {
+    try {
+        const pastes = await storage.getAllPastes();
 
-    // Add rotation animation to refresh button
-    refreshBtn.style.transform = 'rotate(360deg)';
-    setTimeout(() => {
-        refreshBtn.style.transform = '';
-    }, 400);
+        // Add rotation animation to refresh button
+        if (refreshBtn) {
+            refreshBtn.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                refreshBtn.style.transform = '';
+            }, 400);
+        }
 
-    if (pastes.length === 0) {
-        pasteListContainer.innerHTML = `
-            <div class="empty-state">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                    <path d="M16 8L48 8C51.3137 8 54 10.6863 54 14V50C54 53.3137 51.3137 56 48 56H16C12.6863 56 10 53.3137 10 50V14C10 10.6863 12.6863 8 16 8Z" stroke="currentColor" stroke-width="3"/>
-                    <path d="M20 24H44M20 32H44M20 40H36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                </svg>
-                <p>No pastes yet. Create your first one!</p>
-            </div>
-        `;
-        return;
-    }
-
-    pasteListContainer.innerHTML = pastes.map(paste => `
-        <div class="paste-item">
-            <div class="paste-item-header" onclick="viewPaste('${paste.id}')">
-                <div class="paste-item-title">${escapeHtml(paste.title)}</div>
-                <div class="paste-item-id">${paste.id}</div>
-            </div>
-            <div class="paste-item-meta" onclick="viewPaste('${paste.id}')">
-                <span class="language-tag">${paste.language}</span>
-                <span>👁️ ${paste.views}</span>
-                <span>📅 ${formatDate(paste.createdAt)}</span>
-                ${paste.burnAfterRead ? '<span>🔥 Burn</span>' : ''}
-                ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
-            </div>
-            <div class="paste-item-actions">
-                <button onclick="event.stopPropagation(); showAnalytics('${paste.id}')" class="btn-small btn-glass" title="View Analytics">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="margin-right: 4px">
-                        <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
-                        <circle cx="7" cy="7" r="2" fill="currentColor"/>
+        if (!pastes || pastes.length === 0) {
+            pasteListContainer.innerHTML = `
+                <div class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <path d="M16 8L48 8C51.3137 8 54 10.6863 54 14V50C54 53.3137 51.3137 56 48 56H16C12.6863 56 10 53.3137 10 50V14C10 10.6863 12.6863 8 16 8Z" stroke="currentColor" stroke-width="3"/>
+                        <path d="M20 24H44M20 32H44M20 40H36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
                     </svg>
-                    Analytics
-                </button>
+                    <p>No pastes yet. Create your first one!</p>
+                </div>
+            `;
+            return;
+        }
+
+        pasteListContainer.innerHTML = pastes.map(paste => `
+            <div class="paste-item" onclick="viewPaste('${paste.id}')">
+                <div class="paste-item-header">
+                    <div class="paste-item-title">${escapeHtml(paste.title)}</div>
+                    <div class="paste-item-id">${paste.id}</div>
+                </div>
+                <div class="paste-item-meta">
+                    <span class="language-tag">${paste.language}</span>
+                    <span>👁️ ${paste.views}</span>
+                    <span>📅 ${formatDate(paste.createdAt)}</span>
+                    ${paste.burnAfterRead ? '<span>🔥 Burn</span>' : ''}
+                    ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
+                </div>
+                <div class="paste-item-actions">
+                    <button onclick="event.stopPropagation(); showAnalytics('${paste.id}')" class="btn-small btn-glass" title="View Analytics">
+                        📈 Analytics
+                    </button>
+                    <button onclick="event.stopPropagation(); deletePaste('${paste.id}')" class="btn-small btn-glass" title="Delete" style="color: #ff006e">
+                        🗑️ Delete
+                    </button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (error) {
+        console.error('Error loading paste list:', error);
+        pasteListContainer.innerHTML = `<p style="padding: 20px; color: #ff006e">Error: ${error.message}</p>`;
+    }
 }
 
-function showAnalytics(pasteId) {
-    const analytics = storage.getAnalytics(pasteId);
-    const paste = storage.getAllPastes().find(p => p.id === pasteId);
+async function showAnalytics(pasteId) {
+    try {
+        const analytics = await storage.getAnalytics(pasteId);
+        const pastes = await storage.getAllPastes();
+        const paste = pastes.find(p => p.id === pasteId);
 
-    if (!paste) return;
+        if (!paste) return;
 
-    const analyticsModal = document.getElementById('analyticsModal');
-    const analyticsContent = document.getElementById('analyticsContent');
+        const analyticsContent = document.getElementById('analyticsContent');
 
-    // Calculate unique visitors, countries, cities
-    const uniqueIPs = new Set(analytics.views.map(v => v.ip)).size;
-    const uniqueCountries = new Set(analytics.views.map(v => v.country)).size;
-    const uniqueCities = new Set(analytics.views.map(v => v.city)).size;
+        // Calculate unique visitors
+        const uniqueIPs = new Set(analytics.recentViews?.map(v => v.ip) || []).size;
 
-    let html = `
-        <div style="margin-bottom: 24px">
-            <h4 style="font-size: 1.25rem; margin-bottom: 8px">${escapeHtml(paste.title)}</h4>
-            <p style="color: var(--text-tertiary)">Paste ID: <code>${pasteId}</code></p>
-        </div>
-        
-        <div class="stats-grid" style="margin-bottom: 24px">
-            <div class="stat-card">
-                <div class="stat-value">${analytics.totalViews}</div>
-                <div class="stat-label">Total Views</div>
+        let html = `
+            <div style="margin-bottom: 24px">
+                <h4 style="font-size: 1.25rem; margin-bottom: 8px">${escapeHtml(paste.title)}</h4>
+                <p style="color: var(--text-tertiary)">Paste ID: <code>${pasteId}</code></p>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">${uniqueIPs}</div>
-                <div class="stat-label">Unique IPs</div>
+            
+            <div class="stats-grid" style="margin-bottom: 24px">
+                <div class="stat-card">
+                    <div class="stat-value">${analytics.totalViews}</div>
+                    <div class="stat-label">Total Views</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${uniqueIPs}</div>
+                    <div class="stat-label">Unique IPs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${analytics.uniqueCountries || 0}</div>
+                    <div class="stat-label">Countries</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">${uniqueCountries}</div>
-                <div class="stat-label">Countries</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">${uniqueCities}</div>
-                <div class="stat-label">Cities</div>
-            </div>
-        </div>
-    `;
+        `;
 
-    if (analytics.topLocations && analytics.topLocations.length > 0) {
-        html += `
-            <h4 style="font-size: 1.1rem; margin: 24px 0 16px 0; color: var(--text-secondary)">📍 Top Locations</h4>
-            <div class="location-list">
-                ${analytics.topLocations.map(loc => `
-                    <div class="location-item">
-                        <div class="location-flag">${getFlagEmoji(loc.countryCode)}</div>
-                        <div class="location-info">
-                            <div class="location-name">${escapeHtml(loc.city)}, ${escapeHtml(loc.region)}</div>
-                            <div class="location-country">${escapeHtml(loc.country)}</div>
+        if (analytics.topLocations && analytics.topLocations.length > 0) {
+            html += `
+                <h4 style="font-size: 1.1rem; margin: 24px 0 16px 0; color: var(--text-secondary)">📍 Top Locations</h4>
+                <div class="location-list">
+                    ${analytics.topLocations.map(loc => `
+                        <div class="location-item">
+                            <div class="location-flag">${getFlagEmoji(loc.countryCode)}</div>
+                            <div class="location-info">
+                                <div class="location-name">${escapeHtml(loc.name)}</div>
+                            </div>
+                            <div class="location-count">${loc.count} views</div>
                         </div>
-                        <div class="location-count">${loc.count} ${loc.count === 1 ? 'view' : 'views'}</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
+                    `).join('')}
+                </div>
+            `;
+        }
 
-    if (analytics.views && analytics.views.length > 0) {
-        html += `
-            <h4 style="font-size: 1.1rem; margin: 24px 0 16px 0; color: var(--text-secondary)">📊 Recent Views</h4>
-            <div class="views-table">
-                <table style="width: 100%; border-collapse: collapse">
-                    <thead>
-                        <tr style="border-bottom: 1px solid var(--border)">
-                            <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">Time</th>
-                            <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">Location</th>
-                            <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">ISP</th>
-                            <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">IP</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${analytics.views.slice().reverse().slice(0, 20).map(view => `
+        if (analytics.recentViews && analytics.recentViews.length > 0) {
+            html += `
+                <h4 style="font-size: 1.1rem; margin: 24px 0 16px 0; color: var(--text-secondary)">📊 Recent Views</h4>
+                <div class="views-table">
+                    <table style="width: 100%; border-collapse: collapse">
+                        <thead>
                             <tr style="border-bottom: 1px solid var(--border)">
-                                <td style="padding: 12px; font-size: 0.875rem">${formatDateTime(view.timestamp)}</td>
-                                <td style="padding: 12px; font-size: 0.875rem">
-                                    ${getFlagEmoji(view.countryCode)} ${escapeHtml(view.city)}, ${escapeHtml(view.region)}
-                                </td>
-                                <td style="padding: 12px; font-size: 0.875rem; color: var(--text-secondary)">${escapeHtml(view.isp)}</td>
-                                <td style="padding: 12px; font-size: 0.875rem; font-family: var(--font-mono); color: var(--text-tertiary)">${view.ip}</td>
+                                <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">Time</th>
+                                <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">Location</th>
+                                <th style="text-align: left; padding: 12px; color: var(--text-tertiary); font-size: 0.875rem">IP</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    } else {
-        html += `
-            <div style="text-align: center; padding: 40px; color: var(--text-tertiary)">
-                <p>No view analytics available yet. This paste hasn't been viewed.</p>
-                <p style="margin-top: 8px; font-size: 0.875rem">Share the paste URL to start collecting location data!</p>
-            </div>
-        `;
-    }
+                        </thead>
+                        <tbody>
+                            ${analytics.recentViews.map(view => `
+                                <tr style="border-bottom: 1px solid var(--border)">
+                                    <td style="padding: 12px; font-size: 0.875rem">${formatDateTime(view.timestamp)}</td>
+                                    <td style="padding: 12px; font-size: 0.875rem">
+                                        ${escapeHtml(view.city)}, ${escapeHtml(view.country)}
+                                    </td>
+                                    <td style="padding: 12px; font-size: 0.875rem; font-family: var(--font-mono); color: var(--text-tertiary)">${view.ip}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
 
-    analyticsContent.innerHTML = html;
-    analyticsModal.classList.add('active');
+        analyticsContent.innerHTML = html;
+        analyticsModal.classList.add('active');
+    } catch (error) {
+        console.error('Error showing analytics:', error);
+        alert('Failed to load analytics: ' + error.message);
+    }
+}
+
+async function deletePaste(id) {
+    if (!confirm('Are you sure you want to delete this paste?')) return;
+    try {
+        await storage.deletePaste(id);
+        await loadPasteList();
+    } catch (error) {
+        alert('Failed to delete paste: ' + error.message);
+    }
 }
 
 function getFlagEmoji(countryCode) {
@@ -285,54 +306,46 @@ function getFlagEmoji(countryCode) {
 
 function formatDateTime(dateString) {
     const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-
-    return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return date.toLocaleString();
 }
 
 function viewPaste(id) {
-    window.open(`../public/index.html?id=${id}`, '_blank');
+    window.open(`/public/index.html?id=${id}`, '_blank');
 }
 
-function showStats() {
-    const stats = storage.getStats();
+async function showStats() {
+    try {
+        const stats = await storage.getStats();
 
-    const languageCards = Object.entries(stats.languageBreakdown)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([lang, count]) => `
+        const languageCards = Object.entries(stats.languageBreakdown || {})
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([lang, count]) => `
+                <div class="stat-card">
+                    <div class="stat-value">${count}</div>
+                    <div class="stat-label">${lang}</div>
+                </div>
+            `).join('');
+
+        statsContent.innerHTML = `
             <div class="stat-card">
-                <div class="stat-value">${count}</div>
-                <div class="stat-label">${lang}</div>
+                <div class="stat-value">${stats.totalPastes}</div>
+                <div class="stat-label">Total Pastes</div>
             </div>
-        `).join('');
+            <div class="stat-card">
+                <div class="stat-value">${stats.totalViews}</div>
+                <div class="stat-label">Total Views</div>
+            </div>
+            <div class="grid col-3" style="width: 100%; margin-top: 16px">
+                ${languageCards}
+            </div>
+        `;
 
-    statsContent.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-value">${stats.totalPastes}</div>
-            <div class="stat-label">Total Pastes</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">${stats.totalViews}</div>
-            <div class="stat-label">Total Views</div>
-        </div>
-        ${languageCards}
-    `;
-
-    statsModal.classList.add('active');
+        statsModal.classList.add('active');
+    } catch (error) {
+        console.error('Error showing stats:', error);
+        alert('Failed to load stats: ' + error.message);
+    }
 }
 
 function copyUrl() {
@@ -376,13 +389,10 @@ function escapeHtml(text) {
 document.addEventListener('keydown', (e) => {
     // Ctrl/Cmd + Enter to create paste
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        createPaste();
-    }
-
-    // Ctrl/Cmd + K to focus content
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        pasteContent.focus();
+        const activeElement = document.activeElement;
+        if (activeElement === pasteContent || activeElement === pasteTitle) {
+            e.preventDefault();
+            createPaste();
+        }
     }
 });

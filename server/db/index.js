@@ -46,22 +46,40 @@ db.exec(`
         pasteId TEXT,
         ip TEXT,
         country TEXT,
-        countryCode TEXT,
-        region TEXT,
-        regionName TEXT,
         city TEXT,
-        zip TEXT,
-        lat REAL,
-        lon REAL,
-        isp TEXT,
-        org TEXT,
-        asName TEXT,
         userAgent TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(pasteId) REFERENCES pastes(id) ON DELETE CASCADE
     );
 `);
 
-console.log('✅ Database Schema Initialized');
+// --- MIGRATION: Add new analytics columns if they don't exist ---
+const columns = [
+    { name: 'countryCode', type: 'TEXT' },
+    { name: 'region', type: 'TEXT' },
+    { name: 'regionName', type: 'TEXT' },
+    { name: 'zip', type: 'TEXT' },
+    { name: 'lat', type: 'REAL' },
+    { name: 'lon', type: 'REAL' },
+    { name: 'isp', type: 'TEXT' },
+    { name: 'org', type: 'TEXT' },
+    { name: 'asName', type: 'TEXT' }
+];
+
+const tableInfo = db.prepare('PRAGMA table_info(paste_views)').all();
+const existingColumns = tableInfo.map(c => c.name);
+
+columns.forEach(col => {
+    if (!existingColumns.includes(col.name)) {
+        console.log(`🔧 Migrating: Adding ${col.name} to paste_views`);
+        try {
+            db.exec(`ALTER TABLE paste_views ADD COLUMN ${col.name} ${col.type}`);
+        } catch (e) {
+            console.warn(`Could not add column ${col.name}:`, e.message);
+        }
+    }
+});
+
+console.log('✅ Database Schema & Migrations Initialized');
 
 export default db;

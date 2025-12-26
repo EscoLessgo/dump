@@ -10,17 +10,35 @@ function generateId() {
 }
 
 function getClientIP(req) {
-    return req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '127.0.0.1';
+    return req.headers['x-forwarded-for']?.split(',')[0] ||
+        req.headers['x-real-ip'] ||
+        req.socket.remoteAddress ||
+        '127.0.0.1';
 }
 
-// CREATE (Admin only)
+async function fetchGeolocation(ip) {
+    try {
+        if (!ip || ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+            return null;
+        }
+        const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,isp,org,as,query`);
+        const data = await response.json();
+        return data.status === 'success' ? data : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// CREATE
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { title, content, language, expiresAt, isPublic } = req.body;
+        const { title, content, language, expiresAt, isPublic, burnAfterRead } = req.body;
         const id = generateId();
 
-        db.prepare('INSERT INTO pastes (id, title, content, language, expiresAt, isPublic) VALUES (?, ?, ?, ?, ?, ?)')
-            .run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0);
+        db.prepare(`
+            INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0);
 
         res.status(201).json({ id, success: true });
     } catch (e) {
@@ -28,7 +46,7 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-// PUBLIC LIST (Only shows public ones)
+// PUBLIC LIST
 router.get('/public-list', (req, res) => {
     try {
         const list = db.prepare('SELECT id, title, views, createdAt FROM pastes WHERE isPublic = 1 ORDER BY createdAt DESC').all();
@@ -38,8 +56,18 @@ router.get('/public-list', (req, res) => {
     }
 });
 
+// STATS SUMMARY
+router.get('/stats/summary', requireAuth, (req, res) => {
+    const totalPastes = db.prepare('SELECT COUNT(*) as count FROM pastes').get().count;
+    const totalViews = db.prepare('SELECT SUM(views) as total FROM pastes').get().total || 0;
+    const langs = db.prepare('SELECT language, COUNT(*) as count FROM pastes GROUP BY language').all();
+    const languageBreakdown = {};
+    langs.forEach(l => languageBreakdown[l.language] = l.count);
+    res.json({ totalPastes, totalViews, languageBreakdown });
+});
+
 // GET ONE
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const paste = db.prepare('SELECT * FROM pastes WHERE id = ?').get(req.params.id);
         if (!paste) return res.status(404).json({ error: 'Not found' });
@@ -48,7 +76,23 @@ router.get('/:id', (req, res) => {
             return res.status(403).json({ error: 'Private paste' });
         }
 
+        // Increment Views
         db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?').run(req.params.id);
+
+        // Track Background
+        const ip = getClientIP(req);
+        fetchGeolocation(ip).then(loc => {
+            if (loc) {
+                db.prepare(`
+                    INSERT INTO paste_views (pasteId, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(
+                    req.params.id, loc.query, loc.country, loc.countryCode, loc.region, loc.regionName,
+                    loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, req.headers['user-agent']
+                );
+            }
+        }).catch(() => { });
+
         res.json(paste);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -67,10 +111,41 @@ router.delete('/:id', requireAuth, (req, res) => {
     res.json({ success: true });
 });
 
-// ANALYTICS (Minimalist)
+// ANALYTICS (Full logic restored)
 router.get('/:id/analytics', requireAuth, (req, res) => {
-    const views = db.prepare('SELECT * FROM paste_views WHERE pasteId = ? ORDER BY timestamp DESC LIMIT 100').all(req.params.id);
-    res.json({ views });
+    const { id } = req.params;
+    const paste = db.prepare('SELECT views FROM pastes WHERE id = ?').get(id);
+    if (!paste) return res.status(404).json({ error: 'Not found' });
+
+    const views = db.prepare('SELECT * FROM paste_views WHERE pasteId = ? ORDER BY timestamp DESC').all(id);
+
+    const groupCount = (arr, keyFn) => {
+        const map = {};
+        arr.forEach(item => {
+            const k = keyFn(item) || 'Unknown';
+            if (!map[k]) map[k] = { name: k, count: 0 };
+            map[k].count++;
+        });
+        return Object.values(map).sort((a, b) => b.count - a.count);
+    };
+
+    res.json({
+        totalViews: paste.views,
+        uniqueIPs: new Set(views.map(v => v.ip)).size,
+        uniqueCountries: new Set(views.map(v => v.country)).size,
+        topLocations: groupCount(views, v => v.city ? `${v.city}, ${v.country}` : v.country).slice(0, 10),
+        topRegions: groupCount(views, v => v.regionName || v.region).slice(0, 10),
+        topISPs: groupCount(views, v => v.isp).slice(0, 10),
+        topBrowsers: groupCount(views, v => {
+            const ua = v.userAgent || '';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Safari')) return 'Safari';
+            if (ua.includes('Edg/')) return 'Edge';
+            return 'Other';
+        }).slice(0, 5),
+        recentViews: views.slice(0, 50)
+    });
 });
 
 export default router;

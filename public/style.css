@@ -422,7 +422,7 @@ body {
 
 .code-container {
     background: var(--bg-card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border-highlight);
     border-radius: 20px;
     overflow: hidden;
     box-shadow: var(--shadow-lg);
@@ -510,6 +510,8 @@ body {
     line-height: 1.6;
     background: transparent !important;
     padding: 0 !important;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* Custom scrollbar for code */

@@ -70,6 +70,23 @@
             border-radius: 20px;
             font-size: 0.7rem;
         }
+
+        .folder-group {
+            margin-bottom: 2rem;
+        }
+
+        .folder-title {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .folder-items {
+            display: grid;
+            gap: 1rem;
+        }
     </style>
 </head>
 
@@ -87,11 +104,6 @@
         async function loadPastes() {
             try {
                 const res = await fetch('/api/pastes/public-list');
-                const adminRes = await fetch('/api/auth/status');
-                const auth = await adminRes.json();
-
-                // If admin, maybe fetch more? No, let's keep it simple for now.
-
                 const pastes = await res.json();
                 const container = document.getElementById('pasteList');
 
@@ -100,21 +112,68 @@
                     return;
                 }
 
-                container.innerHTML = pastes.map(p => `
-                    <a href="/v/${p.id}" class="paste-item">
-                        <div>
-                            <div class="paste-title">${p.title || 'Untitled'}</div>
-                            <div class="paste-meta">Created ${new Date(p.createdAt).toLocaleString()}</div>
+                // Group by folder
+                const folders = {};
+                const noFolder = [];
+
+                pastes.forEach(p => {
+                    if (p.folderName) {
+                        if (!folders[p.folderName]) folders[p.folderName] = [];
+                        folders[p.folderName].push(p);
+                    } else {
+                        noFolder.push(p);
+                    }
+                });
+
+                let html = '';
+
+                // Render Folders
+                for (const [name, items] of Object.entries(folders)) {
+                    html += `
+                        <div class="folder-group">
+                            <h2 class="folder-title">📁 ${name}</h2>
+                            <div class="folder-items">
+                                ${items.map(p => renderPasteItem(p)).join('')}
+                            </div>
                         </div>
-                        <div>
-                            <span class="badge">${p.views} views</span>
+                    `;
+                }
+
+                // Render Uncategorized
+                if (noFolder.length > 0) {
+                    html += `
+                        <div class="folder-group">
+                            ${Object.keys(folders).length > 0 ? '<h2 class="folder-title">📄 Uncategorized</h2>' : ''}
+                            <div class="folder-items">
+                                ${noFolder.map(p => renderPasteItem(p)).join('')}
+                            </div>
                         </div>
-                    </a>
-                `).join('');
+                    `;
+                }
+
+                container.innerHTML = html;
             } catch (e) {
+                console.error(e);
                 document.getElementById('pasteList').innerHTML = '<p>Error loading pastes.</p>';
             }
         }
+
+        function renderPasteItem(p) {
+            return `
+                <a href="/v/${p.id}" class="paste-item">
+                    <div>
+                        <div class="paste-title">
+                            ${p.hasPassword ? '🔒 ' : ''}${p.title || 'Untitled'}
+                        </div>
+                        <div class="paste-meta">Created ${new Date(p.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div>
+                        <span class="badge">${p.views} views</span>
+                    </div>
+                </a>
+            `;
+        }
+
         loadPastes();
     </script>
 </body>

@@ -91,8 +91,22 @@ router.put('/:id', requireAuth, async (req, res) => {
 // PUBLIC LIST
 router.get('/public-list', (req, res) => {
     try {
-        const list = db.prepare('SELECT id, title, views, createdAt FROM pastes WHERE isPublic = 1 ORDER BY createdAt DESC').all();
-        res.json(list);
+        const list = db.prepare(`
+            SELECT p.id, p.title, p.views, p.createdAt, p.password, f.name as folderName, p.folderId 
+            FROM pastes p 
+            LEFT JOIN folders f ON p.folderId = f.id 
+            WHERE p.isPublic = 1 
+            ORDER BY p.createdAt DESC
+        `).all();
+
+        // Sanitize: Don't send actual password, just a flag
+        const sanitized = list.map(p => ({
+            ...p,
+            hasPassword: !!p.password,
+            password: undefined // Remove from output
+        }));
+
+        res.json(sanitized);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

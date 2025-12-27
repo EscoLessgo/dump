@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Public Pastes - PasteBin Pro</title>
     <link rel="stylesheet" href="/public/style.css">
+    <link rel="stylesheet" href="/public/swirl.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script type="importmap">
     {
@@ -194,6 +195,97 @@
 <body>
     <div id="loading-screen">
         <div id="loading-info">Click/Tap for water-like distortion ripples</div>
+    </div>
+
+    <div id="swirl-background">
+        <input type="checkbox" name="play" id="play-toggle" checked>
+        <input type="checkbox" name="case" id="case-toggle" checked>
+
+        <div class="swirl-container">
+            <div class="swirl-wrapper">
+                <div class="swirl-element">
+                    <span class="swirl-span">T</span><span class="swirl-span">H</span><span
+                        class="swirl-span">E</span><span class="swirl-span"> </span><span
+                        class="swirl-span">E</span><span class="swirl-span">N</span><span
+                        class="swirl-span">D</span><span class="swirl-span"> </span><span
+                        class="swirl-span">I</span><span class="swirl-span">S</span><span class="swirl-span">
+                    </span><span class="swirl-span">T</span><span class="swirl-span">H</span><span
+                        class="swirl-span">E</span><span class="swirl-span"> </span><span
+                        class="swirl-span">B</span><span class="swirl-span">E</span><span
+                        class="swirl-span">G</span><span class="swirl-span">I</span><span
+                        class="swirl-span">N</span><span class="swirl-span">N</span><span
+                        class="swirl-span">I</span><span class="swirl-span">N</span><span
+                        class="swirl-span">G</span><span class="swirl-span"> </span><span
+                        class="swirl-span">I</span><span class="swirl-span">S</span>
+                </div>
+                <label for="play-toggle" class="playBtn" title="Press to play">
+                    <div class="col">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="col">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="col">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="col">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="col">
+                        <div class="dot"></div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="swirl-wrapper">
+                <div class="swirl-element">
+                    <span class="swirl-span">T</span><span class="swirl-span">H</span><span
+                        class="swirl-span">E</span><span class="swirl-span"> </span><span
+                        class="swirl-span">E</span><span class="swirl-span">N</span><span
+                        class="swirl-span">D</span><span class="swirl-span"> </span><span
+                        class="swirl-span">I</span><span class="swirl-span">S</span><span class="swirl-span">
+                    </span><span class="swirl-span">T</span><span class="swirl-span">H</span><span
+                        class="swirl-span">E</span><span class="swirl-span"> </span><span
+                        class="swirl-span">B</span><span class="swirl-span">E</span><span
+                        class="swirl-span">G</span><span class="swirl-span">I</span><span
+                        class="swirl-span">N</span><span class="swirl-span">N</span><span
+                        class="swirl-span">I</span><span class="swirl-span">N</span><span
+                        class="swirl-span">G</span><span class="swirl-span"> </span><span
+                        class="swirl-span">I</span><span class="swirl-span">S</span>
+                </div>
+                <label for="play-toggle" class="pauseBtn" title="Press to pause">
+                    <div class="col">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="col">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div class="switchBox">
+            <label class="lowerCase" for="case-toggle" title="Switch text to lowercase"></label>
+            <label class="upperCase" for="case-toggle" title="Switch text to uppercase"></label>
+        </div>
     </div>
 
     <script type="module">

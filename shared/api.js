@@ -134,6 +134,21 @@ class PasteAPI {
         }
     }
 
+    async deleteAnalyticsLogs(pasteId) {
+        try {
+            const response = await fetch(`${this.apiUrl}/pastes/${pasteId}/analytics`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting analytics logs:', error);
+            throw error;
+        }
+    }
+
     async getStats() {
         try {
             const response = await fetch(`${this.apiUrl}/pastes/stats/summary`, {

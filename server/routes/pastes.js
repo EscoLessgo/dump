@@ -223,4 +223,15 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
     });
 });
 
+// DELETE ANALYTICS
+router.delete('/:id/analytics', requireAuth, (req, res) => {
+    try {
+        const { id } = req.params;
+        db.prepare('DELETE FROM paste_views WHERE pasteId = ?').run(id);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 export default router;

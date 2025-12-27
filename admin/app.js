@@ -278,12 +278,17 @@ async function showAnalytics(pasteId) {
         const uniqueIPs = new Set(analytics.recentViews?.map(v => v.ip) || []).size;
 
         let html = `
-            <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
-                <h4 style="font-size: 1.5rem; margin-bottom: 8px; color: var(--primary-start)">${escapeHtml(paste.title)}</h4>
-                <div style="display: flex; gap: 16px; font-size: 0.875rem; color: var(--text-tertiary)">
-                    <span>ID: <code>${pasteId}</code></span>
-                    <span>Created: ${formatDateTime(paste.createdAt)}</span>
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+                <div>
+                    <h4 style="font-size: 1.5rem; margin-bottom: 8px; color: var(--primary-start)">${escapeHtml(paste.title)}</h4>
+                    <div style="display: flex; gap: 16px; font-size: 0.875rem; color: var(--text-tertiary)">
+                        <span>ID: <code>${pasteId}</code></span>
+                        <span>Created: ${formatDateTime(paste.createdAt)}</span>
+                    </div>
                 </div>
+                <button onclick="deleteAnalyticsLogs('${pasteId}')" class="btn-small btn-glass" style="color: #ff006e; border-color: rgba(255, 0, 110, 0.3);">
+                    🗑️ Clear Logs
+                </button>
             </div>
             
             <div class="stats-grid" style="margin-bottom: 32px">
@@ -398,6 +403,17 @@ async function showAnalytics(pasteId) {
     } catch (error) {
         console.error('Error showing analytics:', error);
         alert('Failed to load analytics: ' + error.message);
+    }
+}
+
+async function deleteAnalyticsLogs(id) {
+    if (!confirm('Are you sure you want to delete all analytics logs for this paste? This cannot be undone.')) return;
+    try {
+        await storage.deleteAnalyticsLogs(id);
+        alert('Logs deleted successfully');
+        showAnalytics(id); // Refresh
+    } catch (error) {
+        alert('Failed to delete logs: ' + error.message);
     }
 }
 

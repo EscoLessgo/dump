@@ -72,20 +72,70 @@
         }
 
         .folder-group {
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .folder-title {
             font-size: 1.5rem;
             color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            list-style: none;
+            position: relative;
+            padding-left: 30px;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .folder-title:hover {
+            color: #00f5ff;
+        }
+
+        .folder-title::-webkit-details-marker {
+            display: none;
+        }
+
+        .folder-title::before {
+            content: '▶';
+            position: absolute;
+            left: 0;
+            font-size: 0.6em;
+            transition: transform 0.2s ease;
+            color: #7b42ff;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        details[open] .folder-title::before {
+            transform: translateY(-50%) rotate(90deg);
+        }
+
+        .folder-count {
+            font-size: 0.9rem;
+            opacity: 0.6;
+            margin-left: 12px;
+            font-weight: normal;
         }
 
         .folder-items {
             display: grid;
             gap: 1rem;
+            margin-top: 1rem;
+            padding-left: 1rem;
+            border-left: 2px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Animation for details */
+        details[open] .folder-items {
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -142,12 +192,14 @@
                 // Render Folders
                 for (const [name, items] of Object.entries(folders)) {
                     html += `
-                        <div class="folder-group">
-                            <h2 class="folder-title">📁 ${name}</h2>
+                        <details class="folder-group">
+                            <summary class="folder-title">
+                                📁 ${name} <span class="folder-count">${items.length} items</span>
+                            </summary>
                             <div class="folder-items">
                                 ${items.map(p => renderPasteItem(p)).join('')}
                             </div>
-                        </div>
+                        </details>
                     `;
                 }
 

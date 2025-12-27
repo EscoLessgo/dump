@@ -123,25 +123,31 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="pasteFolder">Folder</label>
-                            <div style="display: flex; gap: 8px;">
-                                <select id="pasteFolder" class="select-field">
-                                    <option value="">No Folder</option>
-                                    <!-- Populated dynamically -->
-                                </select>
-                                <button id="manageFoldersBtn" class="btn btn-glass btn-icon" title="Manage Folders"
-                                    type="button">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path
-                                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
-                                        </path>
-                                    </svg>
-                                </button>
-                            </div>
+                    <div class="form-group">
+                        <label for="pasteFolder">Folder</label>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="pasteFolder" class="select-field">
+                                <option value="">No Folder</option>
+                                <!-- Populated dynamically -->
+                            </select>
+                            <button id="manageFoldersBtn" class="btn btn-glass btn-icon" title="Manage Folders"
+                                type="button">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                    </path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="pastePassword">Password (Optional)</label>
+                    <input type="password" id="pastePassword" placeholder="Protect with password..."
+                        class="input-field" autocomplete="new-password">
+                </div>
 
                     <div class="form-group">
                         <div

@@ -72,22 +72,47 @@ async function loadPaste() {
 
     // Simulate loading delay for better UX
     setTimeout(async () => {
-        const paste = await storage.getPaste(pasteId);
+        try {
+            let paste = await storage.getPaste(pasteId);
 
-        if (!paste) {
-            showNotFound();
-            return;
+            if (!paste) {
+                showNotFound();
+                return;
+            }
+
+            processPaste(paste);
+        } catch (error) {
+            if (error.message.includes('401')) {
+                // Password required
+                const password = prompt('🔒 This paste is password protected.\nPlease enter the password:');
+                if (password) {
+                    try {
+                        const paste = await storage.getPaste(pasteId, true, password);
+                        processPaste(paste);
+                    } catch (e) {
+                        alert('❌ Incorrect password or access denied.');
+                        showNotFound(); // Or show a specialized "Access Denied" state
+                    }
+                } else {
+                    showNotFound();
+                }
+            } else {
+                console.error(error);
+                showNotFound();
+            }
         }
-
-        if (paste.burned) {
-            currentPaste = paste;
-            showBurned();
-            return;
-        }
-
-        currentPaste = paste;
-        displayPaste(paste);
     }, 500);
+}
+
+function processPaste(paste) {
+    if (paste.burned) {
+        currentPaste = paste;
+        showBurned();
+        return;
+    }
+
+    currentPaste = paste;
+    displayPaste(paste);
 }
 
 function showNotFound() {

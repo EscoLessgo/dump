@@ -46,15 +46,43 @@ async function fetchGeolocation(ip) {
 // CREATE
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { title, content, language, expiresAt, isPublic, burnAfterRead, folderId } = req.body;
+        const { title, content, language, expiresAt, isPublic, burnAfterRead, folderId, password } = req.body;
         const id = generateId();
 
         db.prepare(`
-            INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead, folderId) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0, folderId || null);
+            INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead, folderId, password) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0, folderId || null, password || null);
 
         res.status(201).json({ id, success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// UPDATE
+router.put('/:id', requireAuth, async (req, res) => {
+    try {
+        const { title, content, language, expiresAt, isPublic, burnAfterRead, folderId, password } = req.body;
+        const { id } = req.params;
+
+        db.prepare(`
+            UPDATE pastes 
+            SET title = ?, content = ?, language = ?, expiresAt = ?, isPublic = ?, burnAfterRead = ?, folderId = ?, password = ?
+            WHERE id = ?
+        `).run(
+            title || 'Untitled',
+            content,
+            language || 'plaintext',
+            expiresAt || null,
+            isPublic !== false ? 1 : 0,
+            burnAfterRead ? 1 : 0,
+            folderId || null,
+            password || null,
+            id
+        );
+
+        res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -88,6 +116,18 @@ router.get('/:id', async (req, res) => {
 
         if (paste.isPublic === 0 && (!req.session || !req.session.isAdmin)) {
             return res.status(403).json({ error: 'Private paste' });
+        }
+
+        // Password Check Logic
+        if (paste.password) {
+            const isAdmin = req.session && req.session.isAdmin;
+            const providedPass = req.headers['x-paste-password'] || req.query.password;
+
+            if (!isAdmin) {
+                if (providedPass !== paste.password) {
+                    return res.status(401).json({ error: 'Password required', passwordRequired: true });
+                }
+            }
         }
 
         db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?').run(req.params.id);

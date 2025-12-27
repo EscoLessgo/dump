@@ -8,6 +8,9 @@ const pasteExpiration = document.getElementById('pasteExpiration');
 const pasteContent = document.getElementById('pasteContent');
 const burnAfterRead = document.getElementById('burnAfterRead');
 const isPublic = document.getElementById('isPublic');
+const pastePassword = document.getElementById('pastePassword');
+let currentLocalPasteId = null;
+
 const createPasteBtn = document.getElementById('createPasteBtn');
 const clearBtn = document.getElementById('clearBtn');
 const refreshBtn = document.getElementById('refreshBtn');
@@ -128,16 +131,23 @@ async function createPaste() {
         isPublic: isPublic.checked,
         burnAfterRead: burnAfterRead.checked,
         expiresAt: calculateExpiration(pasteExpiration.value),
-        folderId: pasteFolder.value || null
+        folderId: pasteFolder.value || null,
+        password: pastePassword.value || null
     };
 
     try {
-        const id = await storage.createPaste(content, config);
-
-        // Show success modal
-        const publicUrl = `${window.location.origin}/v/${id}`;
-        pasteUrl.value = publicUrl;
-        successModal.classList.add('active');
+        let id;
+        if (currentLocalPasteId) {
+            await storage.updatePaste(currentLocalPasteId, content, config);
+            id = currentLocalPasteId;
+            alert('Paste updated successfully!');
+        } else {
+            id = await storage.createPaste(content, config);
+            // Show success modal only for new pastes
+            const publicUrl = `${window.location.origin}/v/${id}`;
+            pasteUrl.value = publicUrl;
+            successModal.classList.add('active');
+        }
 
         // Add animation to the button
         createPasteBtn.style.transform = 'scale(0.95)';
@@ -149,7 +159,7 @@ async function createPaste() {
         clearForm();
         await loadPasteList();
     } catch (error) {
-        alert('Failed to create paste. Error: ' + error.message);
+        alert('Failed to save paste. Error: ' + error.message);
         console.error(error);
     }
 }
@@ -170,13 +180,24 @@ function calculateExpiration(expirationValue) {
 }
 
 function clearForm() {
+    currentLocalPasteId = null;
     pasteTitle.value = '';
     pasteContent.value = '';
     pasteLanguage.value = 'plaintext';
     pasteExpiration.value = 'never';
     pasteFolder.value = '';
+    if (pastePassword) pastePassword.value = '';
     burnAfterRead.checked = false;
     isPublic.checked = true;
+
+    // Reset Button
+    createPasteBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        Create Paste
+    `;
+    createPasteBtn.style.background = '';
 }
 
 async function loadPasteList() {
@@ -227,6 +248,9 @@ async function loadPasteList() {
                 <div class="paste-item-actions">
                     <button onclick="event.stopPropagation(); showAnalytics('${paste.id}')" class="btn-small btn-glass" title="View Analytics">
                         📈 Analytics
+                    </button>
+                    <button onclick="event.stopPropagation(); loadPasteForEdit('${paste.id}')" class="btn-small btn-glass" title="Edit">
+                        ✏️ Edit
                     </button>
                     <button onclick="event.stopPropagation(); deletePaste('${paste.id}')" class="btn-small btn-glass" title="Delete" style="color: #ff006e">
                         🗑️ Delete
@@ -399,6 +423,40 @@ function getFlagEmoji(countryCode) {
 function formatDateTime(dateString) {
     const date = new Date(dateString);
     return date.toLocaleString();
+}
+
+async function loadPasteForEdit(id) {
+    try {
+        const paste = await storage.getPaste(id, false);
+        if (!paste) return;
+
+        currentLocalPasteId = paste.id;
+        pasteTitle.value = paste.title || '';
+        pasteContent.value = paste.content || '';
+        pasteLanguage.value = paste.language || 'plaintext';
+        pasteFolder.value = paste.folderId || '';
+        isPublic.checked = paste.isPublic !== 0; // 0 is false
+        burnAfterRead.checked = paste.burnAfterRead !== 0;
+        if (pastePassword) pastePassword.value = paste.password || '';
+
+        // Reset expiration to never for editing as default, unless we want to parse logic
+        pasteExpiration.value = 'never';
+
+        createPasteBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Update Paste
+        `;
+        createPasteBtn.style.background = 'linear-gradient(135deg, #7b42ff, #00f5ff)';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (e) {
+        console.error(e);
+        alert('Failed to load paste for editing');
+    }
 }
 
 function viewPaste(id) {

@@ -93,7 +93,8 @@ migrateTable('pastes', [
     { name: 'burnAfterRead', type: 'INTEGER DEFAULT 0' },
     { name: 'isPublic', type: 'INTEGER DEFAULT 1' },
     { name: 'expiresAt', type: 'DATETIME' },
-    { name: 'folderId', type: 'TEXT' }
+    { name: 'folderId', type: 'TEXT' },
+    { name: 'password', type: 'TEXT' }
 ]);
 
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');

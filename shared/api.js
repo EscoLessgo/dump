@@ -19,7 +19,8 @@ class PasteAPI {
                     expiresAt: config.expiresAt || null,
                     isPublic: config.isPublic !== false,
                     burnAfterRead: config.burnAfterRead || false,
-                    folderId: config.folderId || null
+                    folderId: config.folderId || null,
+                    password: config.password || null
                 })
             });
 
@@ -36,9 +37,44 @@ class PasteAPI {
         }
     }
 
-    async getPaste(id, trackLocation = true) {
+    async updatePaste(id, content, config) {
         try {
-            const response = await fetch(`${this.apiUrl}/pastes/${id}?track=${trackLocation}`, {
+            const response = await fetch(`${this.apiUrl}/pastes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    content,
+                    title: config.title || 'Untitled Paste',
+                    language: config.language || 'plaintext',
+                    expiresAt: config.expiresAt || null,
+                    isPublic: config.isPublic !== false,
+                    burnAfterRead: config.burnAfterRead || false,
+                    folderId: config.folderId || null,
+                    password: config.password || null
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || `HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating paste:', error);
+            throw error;
+        }
+    }
+
+    async getPaste(id, trackLocation = true, password = null) {
+        try {
+            let url = `${this.apiUrl}/pastes/${id}?track=${trackLocation}`;
+            if (password) {
+                url += `&password=${encodeURIComponent(password)}`;
+            }
+
+            const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include'
             });

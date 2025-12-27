@@ -48,6 +48,9 @@ app.use('/uploads', express.static(process.env.RAILWAY_VOLUME_MOUNT_PATH
     ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
     : path.join(__dirname, '..', 'public', 'uploads')));
 
+// Redirect /admin to /adminperm for convenience
+app.get('/admin', (req, res) => res.redirect('/adminperm'));
+
 // Admin Section (/adminperm)
 app.use('/adminperm', (req, res, next) => {
     if (req.path === '/login.html' || req.path.match(/\.(css|js|jpg|png|svg|ico)$/)) {

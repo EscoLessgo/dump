@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Public Pastes - PasteBin Pro</title>
     <link rel="stylesheet" href="/public/style.css">
-    <link rel="stylesheet" href="/public/swirl.css">
+    <link rel="stylesheet" href="/public/motion-blur.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script type="importmap">
     {
@@ -22,11 +22,14 @@
             color: white;
             margin: 0;
             padding: 2rem;
+            overflow-x: hidden;
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
+            position: relative;
+            z-index: 20;
         }
 
         h1 {
@@ -38,157 +41,7 @@
             margin-bottom: 2rem;
         }
 
-        .paste-list {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .paste-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-decoration: none;
-            color: white;
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .paste-item:hover {
-            transform: translateY(-3px);
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #00f5ff;
-        }
-
-        .paste-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-
-        .paste-meta {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .badge {
-            background: #7b42ff;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-        }
-
-        .folder-group {
-            margin-bottom: 1rem;
-        }
-
-        .folder-title {
-            font-size: 1.5rem;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            list-style: none;
-            position: relative;
-            padding-left: 30px;
-            display: flex;
-            align-items: center;
-            transition: color 0.2s;
-        }
-
-        .folder-title:hover {
-            color: #00f5ff;
-        }
-
-        .folder-title::-webkit-details-marker {
-            display: none;
-        }
-
-        .folder-title::before {
-            content: '▶';
-            position: absolute;
-            left: 0;
-            font-size: 0.6em;
-            transition: transform 0.2s ease;
-            color: #7b42ff;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        details[open] .folder-title::before {
-            transform: translateY(-50%) rotate(90deg);
-        }
-
-        .folder-count {
-            font-size: 0.9rem;
-            opacity: 0.6;
-            margin-left: 12px;
-            font-weight: normal;
-        }
-
-        .folder-items {
-            display: grid;
-            gap: 1rem;
-            margin-top: 1rem;
-            padding-left: 1rem;
-            border-left: 2px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Animation for details */
-        details[open] .folder-items {
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Loading Screen */
-        #loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 9999;
-            background: #000;
-            transition: opacity 1s ease-out;
-            pointer-events: auto;
-            /* Allow clicks on shader */
-        }
-
-        #loading-screen.fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        #loading-info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #ffffff;
-            font-family: monospace;
-            font-size: 12px;
-            pointer-events: none;
-            z-index: 10000;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
+        /* ... existing styles ... */
     </style>
 </head>
 
@@ -197,96 +50,15 @@
         <div id="loading-info">Click/Tap for water-like distortion ripples</div>
     </div>
 
-    <div id="swirl-background">
-        <input type="checkbox" name="play" id="play-toggle" checked>
-        <input type="checkbox" name="case" id="case-toggle" checked>
-
-        <div class="swirl-container">
-            <div class="swirl-wrapper">
-                <div class="swirl-element">
-                    <span class="swirl-span">T</span><span class="swirl-span">H</span><span
-                        class="swirl-span">E</span><span class="swirl-span"> </span><span
-                        class="swirl-span">E</span><span class="swirl-span">N</span><span
-                        class="swirl-span">D</span><span class="swirl-span"> </span><span
-                        class="swirl-span">I</span><span class="swirl-span">S</span><span class="swirl-span">
-                    </span><span class="swirl-span">T</span><span class="swirl-span">H</span><span
-                        class="swirl-span">E</span><span class="swirl-span"> </span><span
-                        class="swirl-span">B</span><span class="swirl-span">E</span><span
-                        class="swirl-span">G</span><span class="swirl-span">I</span><span
-                        class="swirl-span">N</span><span class="swirl-span">N</span><span
-                        class="swirl-span">I</span><span class="swirl-span">N</span><span
-                        class="swirl-span">G</span><span class="swirl-span"> </span><span
-                        class="swirl-span">I</span><span class="swirl-span">S</span>
-                </div>
-                <label for="play-toggle" class="playBtn" title="Press to play">
-                    <div class="col">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <div class="col">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <div class="col">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <div class="col">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <div class="col">
-                        <div class="dot"></div>
-                    </div>
-                </label>
-            </div>
-
-            <div class="swirl-wrapper">
-                <div class="swirl-element">
-                    <span class="swirl-span">T</span><span class="swirl-span">H</span><span
-                        class="swirl-span">E</span><span class="swirl-span"> </span><span
-                        class="swirl-span">E</span><span class="swirl-span">N</span><span
-                        class="swirl-span">D</span><span class="swirl-span"> </span><span
-                        class="swirl-span">I</span><span class="swirl-span">S</span><span class="swirl-span">
-                    </span><span class="swirl-span">T</span><span class="swirl-span">H</span><span
-                        class="swirl-span">E</span><span class="swirl-span"> </span><span
-                        class="swirl-span">B</span><span class="swirl-span">E</span><span
-                        class="swirl-span">G</span><span class="swirl-span">I</span><span
-                        class="swirl-span">N</span><span class="swirl-span">N</span><span
-                        class="swirl-span">I</span><span class="swirl-span">N</span><span
-                        class="swirl-span">G</span><span class="swirl-span"> </span><span
-                        class="swirl-span">I</span><span class="swirl-span">S</span>
-                </div>
-                <label for="play-toggle" class="pauseBtn" title="Press to pause">
-                    <div class="col">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <div class="col">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                </label>
-            </div>
-        </div>
-
-        <div class="switchBox">
-            <label class="lowerCase" for="case-toggle" title="Switch text to lowercase"></label>
-            <label class="upperCase" for="case-toggle" title="Switch text to uppercase"></label>
-        </div>
+    <!-- Motion Blur Overlay -->
+    <div id="motion-blur-container">
+        <!-- Cursor trail elements will be injected here or body -->
     </div>
+
+    <!-- Motion Blur Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
+    <script src="/public/motion-blur.js"></script>
 
     <script type="module">
         import { initLoadingShader } from '/public/loading-shader.js';

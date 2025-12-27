@@ -7,6 +7,13 @@
     <title>Public Pastes - PasteBin Pro</title>
     <link rel="stylesheet" href="/public/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -127,20 +134,73 @@
             padding-left: 1rem;
             border-left: 2px solid rgba(255, 255, 255, 0.05);
         }
-        
+
         /* Animation for details */
         details[open] .folder-items {
             animation: slideDown 0.3s ease-out;
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            background: #000;
+            transition: opacity 1s ease-out;
+            pointer-events: auto;
+            /* Allow clicks on shader */
+        }
+
+        #loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #loading-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 
 <body>
+    <div id="loading-screen">
+        <div id="loading-info">Click/Tap for water-like distortion ripples</div>
+    </div>
+
+    <script type="module">
+        import { initLoadingShader } from '/public/loading-shader.js';
+        initLoadingShader('loading-screen');
+    </script>
+
     <div class="container">
         <header>
             <h1>Public Pastes</h1>
@@ -204,9 +264,25 @@
                 }
 
                 container.innerHTML = html;
+
+                // Hide loading screen after a short delay to show off the shader
+                setTimeout(() => {
+                    const loader = document.getElementById('loading-screen');
+                    if (loader) {
+                        loader.classList.add('fade-out');
+                        setTimeout(() => loader.remove(), 1000); // Remove from DOM after fade
+                    }
+                }, 2500); // Wait 2.5s seconds to let user see the cool shader
+
             } catch (e) {
                 console.error(e);
                 document.getElementById('pasteList').innerHTML = '<p>Error loading pastes.</p>';
+                // Ensure loader hides even on error
+                const loader = document.getElementById('loading-screen');
+                if (loader) {
+                    loader.classList.add('fade-out');
+                    setTimeout(() => loader.remove(), 1000);
+                }
             }
         }
 

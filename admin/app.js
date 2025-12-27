@@ -22,9 +22,25 @@ const pasteUrl = document.getElementById('pasteUrl');
 const copyUrlBtn = document.getElementById('copyUrlBtn');
 const statsContent = document.getElementById('statsContent');
 
+// Folder Elements
+const pasteFolder = document.getElementById('pasteFolder');
+const manageFoldersBtn = document.getElementById('manageFoldersBtn');
+const folderModal = document.getElementById('folderModal');
+const closeFolderBtn = document.getElementById('closeFolderBtn');
+const newFolderName = document.getElementById('newFolderName');
+const addFolderBtn = document.getElementById('addFolderBtn');
+const folderList = document.getElementById('folderList');
+
+// Image Elements
+const uploadImageBtn = document.getElementById('uploadImageBtn');
+const imageInput = document.getElementById('imageInput');
+
 // Initialize
 window.addEventListener('DOMContentLoaded', async () => {
-    await loadPasteList();
+    await Promise.all([
+        loadPasteList(),
+        loadFolderList()
+    ]);
 });
 
 // Event Listeners
@@ -43,6 +59,24 @@ if (closeStatsBtn) closeStatsBtn.addEventListener('click', () => {
     statsModal.classList.remove('active');
 });
 if (copyUrlBtn) copyUrlBtn.addEventListener('click', copyUrl);
+
+// Folder Events
+if (manageFoldersBtn) manageFoldersBtn.addEventListener('click', () => {
+    folderModal.classList.add('active');
+});
+if (closeFolderBtn) closeFolderBtn.addEventListener('click', () => {
+    folderModal.classList.remove('active');
+});
+if (addFolderBtn) addFolderBtn.addEventListener('click', createFolder);
+if (folderModal) {
+    folderModal.addEventListener('click', (e) => {
+        if (e.target === folderModal) folderModal.classList.remove('active');
+    });
+}
+
+// Image Events
+if (uploadImageBtn) uploadImageBtn.addEventListener('click', () => imageInput.click());
+if (imageInput) imageInput.addEventListener('change', handleImageUpload);
 
 // Close modals on background click
 if (successModal) {
@@ -93,7 +127,8 @@ async function createPaste() {
         language: pasteLanguage.value,
         isPublic: isPublic.checked,
         burnAfterRead: burnAfterRead.checked,
-        expiresAt: calculateExpiration(pasteExpiration.value)
+        expiresAt: calculateExpiration(pasteExpiration.value),
+        folderId: pasteFolder.value || null
     };
 
     try {
@@ -139,13 +174,20 @@ function clearForm() {
     pasteContent.value = '';
     pasteLanguage.value = 'plaintext';
     pasteExpiration.value = 'never';
+    pasteFolder.value = '';
     burnAfterRead.checked = false;
     isPublic.checked = true;
 }
 
 async function loadPasteList() {
     try {
-        const pastes = await storage.getAllPastes();
+        const [pastes, folders] = await Promise.all([
+            storage.getAllPastes(),
+            storage.getAllFolders()
+        ]);
+
+        const folderMap = {};
+        folders.forEach(f => folderMap[f.id] = f.name);
 
         // Add rotation animation to refresh button
         if (refreshBtn) {
@@ -178,6 +220,7 @@ async function loadPasteList() {
                     <span class="language-tag">${paste.language}</span>
                     <span>👁️ ${paste.views}</span>
                     <span>📅 ${formatDate(paste.createdAt)}</span>
+                    ${paste.folderId ? `<span>📁 ${escapeHtml(folderMap[paste.folderId] || 'Unknown')}</span>` : ''}
                     ${paste.burnAfterRead ? '<span>🔥 Burn</span>' : ''}
                     ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
                 </div>
@@ -445,3 +488,85 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// FOLDER MANAGEMENT
+async function loadFolderList() {
+    try {
+        const folders = await storage.getAllFolders();
+
+        // Update dropdown
+        const currentValue = pasteFolder.value;
+        pasteFolder.innerHTML = '<option value="">No Folder</option>' +
+            folders.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+        pasteFolder.value = currentValue;
+
+        // Update modal list
+        folderList.innerHTML = folders.length === 0 ? '<p style="color: var(--text-tertiary); text-align: center; padding: 10px;">No folders yet.</p>' :
+            folders.map(f => `
+            <div class="folder-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border)">
+                <span>📁 ${escapeHtml(f.name)}</span>
+                <button onclick="deleteFolder('${f.id}')" class="btn-icon" style="color: #ff006e" title="Delete Folder">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading folders:', error);
+    }
+}
+
+async function createFolder() {
+    const name = newFolderName.value.trim();
+    if (!name) return;
+
+    try {
+        await storage.createFolder(name);
+        newFolderName.value = '';
+        await loadFolderList();
+    } catch (error) {
+        alert('Failed to create folder: ' + error.message);
+    }
+}
+
+async function deleteFolder(id) {
+    if (!confirm('Are you sure you want to delete this folder? Pastes in this folder will NOT be deleted, but will become folder-less.')) return;
+    try {
+        await storage.deleteFolder(id);
+        await loadFolderList();
+        await loadPasteList();
+    } catch (error) {
+        alert('Failed to delete folder: ' + error.message);
+    }
+}
+
+// IMAGE UPLOAD
+async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const originalText = uploadImageBtn.childNodes[0].textContent;
+    uploadImageBtn.childNodes[0].textContent = '⏳ Uploading...';
+    uploadImageBtn.disabled = true;
+
+    try {
+        const result = await storage.uploadImage(file);
+
+        // Insert Markdown/HTML into content
+        const markdown = `![${file.name}](${window.location.origin}${result.url})`;
+        const start = pasteContent.selectionStart;
+        const end = pasteContent.selectionEnd;
+        const text = pasteContent.value;
+        pasteContent.value = text.substring(0, start) + markdown + text.substring(end);
+
+        // Trigger input event to update any preview (if exists)
+        pasteContent.dispatchEvent(new Event('input'));
+    } catch (error) {
+        alert('Upload failed: ' + error.message);
+    } finally {
+        uploadImageBtn.childNodes[0].textContent = originalText;
+        uploadImageBtn.disabled = false;
+        imageInput.value = ''; // Reset input
+    }
+}

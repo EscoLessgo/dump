@@ -864,3 +864,57 @@ label {
     font-family: var(--font-mono);
     font-size: 0.875rem;
 }
+
+/* ============================================
+   FOLDER MANAGEMENT
+   ============================================ */
+
+.folder-management-body {
+    padding-top: var(--spacing-md);
+}
+
+.folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+.folder-item {
+    padding: var(--spacing-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all var(--transition-base);
+}
+
+.folder-item:hover {
+    border-color: var(--border-highlight);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.folder-item span {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Image Upload Preview/Button styling if needed */
+#uploadImageBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-base);
+}
+
+#uploadImageBtn:hover {
+    background: rgba(0, 245, 255, 0.1);
+    color: var(--primary-start);
+}
+
+.markdown-body img {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 10px 0;
+}

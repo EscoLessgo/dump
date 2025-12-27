@@ -14,6 +14,12 @@ const db = new Database(path.join(dataDir, 'database.sqlite'));
 
 // Realistic Schema
 db.exec(`
+    CREATE TABLE IF NOT EXISTS folders (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS pastes (
         id TEXT PRIMARY KEY,
         title TEXT,
@@ -23,7 +29,9 @@ db.exec(`
         isPublic INTEGER DEFAULT 1,
         burnAfterRead INTEGER DEFAULT 0,
         expiresAt DATETIME,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        folderId TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(folderId) REFERENCES folders(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS paste_views (
@@ -84,7 +92,8 @@ migrateTable('paste_views', [
 migrateTable('pastes', [
     { name: 'burnAfterRead', type: 'INTEGER DEFAULT 0' },
     { name: 'isPublic', type: 'INTEGER DEFAULT 1' },
-    { name: 'expiresAt', type: 'DATETIME' }
+    { name: 'expiresAt', type: 'DATETIME' },
+    { name: 'folderId', type: 'TEXT' }
 ]);
 
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');

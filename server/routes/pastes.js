@@ -46,13 +46,13 @@ async function fetchGeolocation(ip) {
 // CREATE
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { title, content, language, expiresAt, isPublic, burnAfterRead } = req.body;
+        const { title, content, language, expiresAt, isPublic, burnAfterRead, folderId } = req.body;
         const id = generateId();
 
         db.prepare(`
-            INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0);
+            INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead, folderId) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0, folderId || null);
 
         res.status(201).json({ id, success: true });
     } catch (e) {

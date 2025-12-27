@@ -171,10 +171,19 @@ function displayPaste(paste) {
     const ext = extensions[paste.language] || '.txt';
     codeTitle.textContent = paste.title.toLowerCase().replace(/\s+/g, '-') + ext;
 
-    // Syntax highlighting
-    pasteContent.textContent = paste.content;
-    pasteContent.className = `language-${paste.language}`;
-    hljs.highlightElement(pasteContent);
+    // Syntax highlighting or Markdown rendering
+    if (paste.language === 'markdown') {
+        pasteContent.innerHTML = marked.parse(paste.content);
+        pasteContent.classList.add('markdown-body');
+        // Apply syntax highlighting to code blocks within markdown
+        pasteContent.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+    } else {
+        pasteContent.textContent = paste.content;
+        pasteContent.className = `language-${paste.language}`;
+        hljs.highlightElement(pasteContent);
+    }
 
     // Add line numbers if enabled
     if (showLineNumbers) {
@@ -337,6 +346,34 @@ style.textContent = `
         user-select: none;
         border-right: 1px solid var(--border);
         padding-right: 12px;
+    }
+
+    .markdown-body img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 16px 0;
+        border: 1px solid var(--border);
+    }
+    
+    .markdown-body a {
+        color: var(--primary-start);
+        text-decoration: none;
+    }
+    
+    .markdown-body a:hover {
+        text-decoration: underline;
+    }
+
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+        margin-top: 24px;
+        margin-bottom: 16px;
+        color: var(--primary-start);
+    }
+
+    .markdown-body p {
+        margin-bottom: 16px;
+        line-height: 1.6;
     }
 `;
 document.head.appendChild(style);

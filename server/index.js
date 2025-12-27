@@ -6,6 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import pastesRouter from './routes/pastes.js';
 import authRouter from './routes/auth.js';
+import foldersRouter from './routes/folders.js';
+import imagesRouter from './routes/images.js';
 
 dotenv.config();
 
@@ -36,10 +38,15 @@ app.use(session({
 // API Routes
 app.use('/api/auth', authRouter);
 app.use('/api/pastes', pastesRouter);
+app.use('/api/folders', foldersRouter);
+app.use('/api/images', imagesRouter);
 
 // Static Folders
 app.use('/shared', express.static(path.join(__dirname, '..', 'shared')));
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
+app.use('/uploads', express.static(process.env.RAILWAY_VOLUME_MOUNT_PATH
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+    : path.join(__dirname, '..', 'public', 'uploads')));
 
 // Admin Section (/adminperm)
 app.use('/adminperm', (req, res, next) => {

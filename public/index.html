@@ -127,6 +127,18 @@
 
                 let html = '';
 
+                // Render Uncategorized (Top Priority)
+                if (noFolder.length > 0) {
+                    html += `
+                        <div class="folder-group">
+                            ${Object.keys(folders).length > 0 ? '<h2 class="folder-title">📄 Uncategorized</h2>' : ''}
+                            <div class="folder-items">
+                                ${noFolder.map(p => renderPasteItem(p)).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // Render Folders
                 for (const [name, items] of Object.entries(folders)) {
                     html += `
@@ -134,18 +146,6 @@
                             <h2 class="folder-title">📁 ${name}</h2>
                             <div class="folder-items">
                                 ${items.map(p => renderPasteItem(p)).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Render Uncategorized
-                if (noFolder.length > 0) {
-                    html += `
-                        <div class="folder-group">
-                            ${Object.keys(folders).length > 0 ? '<h2 class="folder-title">📄 Uncategorized</h2>' : ''}
-                            <div class="folder-items">
-                                ${noFolder.map(p => renderPasteItem(p)).join('')}
                             </div>
                         </div>
                     `;

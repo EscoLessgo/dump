@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB limit
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -34,19 +34,30 @@ const upload = multer({
             cb(new Error('Only images are allowed'));
         }
     }
-});
+}).single('image');
 
 const router = express.Router();
 
-router.post('/upload', requireAuth, upload.single('image'), (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+router.post('/upload', requireAuth, (req, res) => {
+    upload(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            // A Multer error occurred when uploading.
+            return res.status(400).json({ error: `Upload error: ${err.message}` });
+        } else if (err) {
+            // An unknown error occurred when uploading.
+            return res.status(400).json({ error: err.message });
+        }
 
-        const url = `/uploads/${req.file.filename}`;
-        res.json({ url, success: true });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
+        // Everything went fine.
+        try {
+            if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+            const url = `/uploads/${req.file.filename}`;
+            res.json({ url, success: true });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    });
 });
 
 export default router;

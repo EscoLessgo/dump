@@ -618,6 +618,9 @@ async function handleImageUpload(e) {
         const text = pasteContent.value;
         pasteContent.value = text.substring(0, start) + markdown + text.substring(end);
 
+        // Auto-switch to Markdown
+        pasteLanguage.value = 'markdown';
+
         // Trigger input event to update any preview (if exists)
         pasteContent.dispatchEvent(new Event('input'));
     } catch (error) {

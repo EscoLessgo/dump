@@ -197,7 +197,11 @@ function displayPaste(paste) {
     codeTitle.textContent = paste.title.toLowerCase().replace(/\s+/g, '-') + ext;
 
     // Syntax highlighting or Markdown rendering
-    if (paste.language === 'markdown') {
+    // Syntax highlighting or Markdown rendering
+    // Auto-detect markdown images even in plaintext
+    const hasImage = /!\[.*?\]\(.*?\)/.test(paste.content);
+
+    if (paste.language === 'markdown' || (paste.language === 'plaintext' && hasImage)) {
         pasteContent.innerHTML = marked.parse(paste.content);
         pasteContent.classList.add('markdown-body');
         // Apply syntax highlighting to code blocks within markdown

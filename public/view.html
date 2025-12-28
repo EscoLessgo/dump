@@ -267,21 +267,34 @@
             const iconMuted = document.getElementById('iconMuted');
             const iconSound = document.getElementById('iconSound');
             const arrow = document.getElementById('volumeArrow');
-            const loadingScreen = document.getElementById('loading-screen');
 
             // Set volume extremely low as requested
             audio.volume = 0.02;
 
             let isPlaying = false;
+            let hasInteracted = false;
+
+            function playAudio() {
+                if (isPlaying) return;
+
+                audio.play().then(() => {
+                    isPlaying = true;
+                    updateIcon();
+
+                    // Show arrow briefly then fade
+                    arrow.classList.add('visible');
+                    setTimeout(() => {
+                        arrow.classList.remove('visible');
+                    }, 4000);
+
+                }).catch(e => {
+                    console.log("Audio play failed (waiting for interaction):", e);
+                });
+            }
 
             function toggleAudio() {
                 if (audio.paused) {
-                    audio.play().then(() => {
-                        isPlaying = true;
-                        updateIcon();
-                        // Hide arrow if it's still visible
-                        arrow.classList.remove('visible');
-                    }).catch(e => console.log("Audio play failed", e));
+                    playAudio(); // This will just work because it's in a click handler
                 } else {
                     audio.pause();
                     isPlaying = false;
@@ -290,7 +303,7 @@
             }
 
             function updateIcon() {
-                if (isPlaying) {
+                if (!audio.paused) {
                     iconMuted.style.display = 'none';
                     iconSound.style.display = 'block';
                     volBtn.classList.add('active-volume');
@@ -301,32 +314,24 @@
                 }
             }
 
+            // Button Toggle
             volBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 toggleAudio();
             });
 
-            // Try to play on loading screen click/remove
-            if (loadingScreen) {
-                loadingScreen.addEventListener('click', () => {
-                    // Attempt play
-                    if (audio.paused) {
-                        audio.play().then(() => {
-                            isPlaying = true;
-                            updateIcon();
-
-                            // Show arrow briefly then fade
-                            arrow.classList.add('visible');
-                            setTimeout(() => {
-                                arrow.classList.remove('visible');
-                            }, 4000);
-
-                        }).catch(e => {
-                            console.log("Auto-play prevented, waiting for explicit toggle");
-                        });
-                    }
-                });
+            // Global Interaction Listener (One-time auto-start)
+            function onGlobalInteraction() {
+                if (!hasInteracted && audio.paused) {
+                    hasInteracted = true; // Mark as interacted so we don't annoyingly retry if they explicitly paused it later (though this runs once usually)
+                    playAudio();
+                }
             }
+
+            // Listen to clicks/keys anywhere to start the music
+            document.addEventListener('click', onGlobalInteraction);
+            document.addEventListener('keydown', onGlobalInteraction);
+            document.addEventListener('touchstart', onGlobalInteraction);
         });
     </script>
 

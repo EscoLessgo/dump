@@ -7,6 +7,7 @@
     <title>PasteBin Pro - View Paste</title>
     <meta name="description" content="View and share code snippets with beautiful syntax highlighting">
     <link rel="stylesheet" href="/public/style.css">
+    <link rel="stylesheet" href="/public/motion-blur.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -181,6 +182,153 @@
             <button id="copyRawBtn" class="btn btn-primary btn-large">Copy Raw Content</button>
         </div>
     </div>
+
+    <!-- Motion Blur Cursor Container -->
+    <div id="motion-blur-container"></div>
+
+    <!-- Loading Screen (Shader) -->
+    <div id="loading-screen"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #000; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+        <div id="loading-info"
+            style="color: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase;">
+            Loading...</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
+    <script src="/public/motion-blur.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+    <script type="module">
+        import { initLoadingShader } from '/public/loading-shader.js';
+
+        // Initialize shader
+        initLoadingShader('loading-screen');
+
+        // Hide loader when content is ready (hooked into existing logic or timeout)
+        window.hideLoader = function () {
+            const loader = document.getElementById('loading-screen');
+            if (loader && !loader.classList.contains('fading')) {
+                loader.classList.add('fading');
+                // Simple fade out animation
+                loader.style.transition = 'opacity 1s ease';
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 1000);
+            }
+        };
+
+        // Fallback if app.js doesn't call it immediately
+        setTimeout(window.hideLoader, 2000); 
+    </script>
+
+    <!-- Audio Elements -->
+    <audio id="bgAudio" loop preload="auto">
+        <source src="/public/audio.flac" type="audio/flac">
+        <source src="/public/song.flac" type="audio/flac">
+        Your browser does not support the audio element.
+    </audio>
+
+    <div id="volumeControl" class="volume-control">
+        <div id="volumeArrow" class="volume-arrow">
+            <span>Turn up the volume</span>
+            <svg width="40" height="20" viewBox="0 0 40 20" fill="none">
+                <path d="M10 10l20 0m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+        </div>
+        <button id="imgVolumeBtn" class="btn-icon volume-btn" title="Toggle Volume">
+            <!-- Muted Icon by default -->
+            <svg id="iconMuted" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M11 5L6 9H2V15H6L11 19V5Z" />
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+            <!-- Sound Icon (hidden) -->
+            <svg id="iconSound" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" style="display: none;">
+                <path d="M11 5L6 9H2V15H6L11 19V5Z" />
+                <path d="M19.07 4.93C20.98 6.84 20.98 9.95 19.07 11.85" />
+                <path d="M15.54 8.46C16.47 9.39 16.47 10.91 15.54 11.84" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const audio = document.getElementById('bgAudio');
+            const volBtn = document.getElementById('imgVolumeBtn');
+            const iconMuted = document.getElementById('iconMuted');
+            const iconSound = document.getElementById('iconSound');
+            const arrow = document.getElementById('volumeArrow');
+            const loadingScreen = document.getElementById('loading-screen');
+
+            // Set volume extremely low as requested
+            audio.volume = 0.02;
+
+            let isPlaying = false;
+
+            function toggleAudio() {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        isPlaying = true;
+                        updateIcon();
+                        // Hide arrow if it's still visible
+                        arrow.classList.remove('visible');
+                    }).catch(e => console.log("Audio play failed", e));
+                } else {
+                    audio.pause();
+                    isPlaying = false;
+                    updateIcon();
+                }
+            }
+
+            function updateIcon() {
+                if (isPlaying) {
+                    iconMuted.style.display = 'none';
+                    iconSound.style.display = 'block';
+                    volBtn.classList.add('active-volume');
+                } else {
+                    iconMuted.style.display = 'block';
+                    iconSound.style.display = 'none';
+                    volBtn.classList.remove('active-volume');
+                }
+            }
+
+            volBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleAudio();
+            });
+
+            // Try to play on loading screen click/remove
+            if (loadingScreen) {
+                loadingScreen.addEventListener('click', () => {
+                    // Attempt play
+                    if (audio.paused) {
+                        audio.play().then(() => {
+                            isPlaying = true;
+                            updateIcon();
+
+                            // Show arrow briefly then fade
+                            arrow.classList.add('visible');
+                            setTimeout(() => {
+                                arrow.classList.remove('visible');
+                            }, 4000);
+
+                        }).catch(e => {
+                            console.log("Auto-play prevented, waiting for explicit toggle");
+                        });
+                    }
+                });
+            }
+        });
+    </script>
 
     <script src="/shared/api.js"></script>
     <script src="/public/app.js"></script>

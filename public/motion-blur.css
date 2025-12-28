@@ -5,11 +5,10 @@
     --transition: all 0.3s ease-in-out 0s;
 }
 
-html,
+/* html,
 body {
     cursor: none !important;
-    /* Hide default cursor */
-}
+} */
 
 #motion-blur-container {
     position: fixed;

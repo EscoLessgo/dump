@@ -70,7 +70,8 @@ app.get('/', (req, res) => {
 
 // Short URL for viewing pastes: /v/ID
 app.get('/v/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'view.html'));
+    // Serve index.html for SPA routing on client side
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Error handling

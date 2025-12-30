@@ -72,15 +72,15 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-// Public Viewer
-app.get('/public-viewer', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'viewer.html'));
+// Public Viewer - SPA Redirects
+app.get('/public', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Short URL for viewing pastes: /v/ID
 app.get('/v/:id', (req, res) => {
-    // Serve viewer.html for SPA routing on client side
-    res.sendFile(path.join(__dirname, '..', 'public', 'viewer.html'));
+    // Serve index.html for SPA routing
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Error handling

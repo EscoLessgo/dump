@@ -514,6 +514,16 @@ body {
     word-break: break-word;
 }
 
+/* Images in Markdown */
+#pasteContent img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 10px 0;
+    box-shadow: var(--shadow-md);
+}
+
 /* Custom scrollbar for code */
 #pasteContentContainer::-webkit-scrollbar {
     height: 10px;

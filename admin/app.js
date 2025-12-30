@@ -38,6 +38,14 @@ const folderList = document.getElementById('folderList');
 const uploadImageBtn = document.getElementById('uploadImageBtn');
 const imageInput = document.getElementById('imageInput');
 
+// Access Key Elements
+const accessBtn = document.getElementById('accessBtn');
+const accessModal = document.getElementById('accessModal');
+const closeAccessBtn = document.getElementById('closeAccessBtn');
+const generatedKey = document.getElementById('generatedKey');
+const copyKeyBtn = document.getElementById('copyKeyBtn');
+const generateKeyBtn = document.getElementById('generateKeyBtn');
+
 // Initialize
 window.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([
@@ -54,6 +62,10 @@ if (viewPublicBtn) viewPublicBtn.addEventListener('click', () => {
     window.open('/', '_blank');
 });
 if (statsBtn) statsBtn.addEventListener('click', showStats);
+if (accessBtn) accessBtn.addEventListener('click', () => {
+    accessModal.classList.add('active');
+    generatedKey.value = ''; // Clear previous
+});
 
 if (closeModalBtn) closeModalBtn.addEventListener('click', () => {
     successModal.classList.remove('active');
@@ -61,6 +73,45 @@ if (closeModalBtn) closeModalBtn.addEventListener('click', () => {
 if (closeStatsBtn) closeStatsBtn.addEventListener('click', () => {
     statsModal.classList.remove('active');
 });
+if (closeAccessBtn) closeAccessBtn.addEventListener('click', () => {
+    accessModal.classList.remove('active');
+});
+
+if (generateKeyBtn) generateKeyBtn.addEventListener('click', async () => {
+    generateKeyBtn.disabled = true;
+    generateKeyBtn.textContent = 'Generating...';
+    try {
+        const res = await fetch('/api/access/generate', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            generatedKey.value = data.key;
+        } else {
+            alert('Failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    } finally {
+        generateKeyBtn.disabled = false;
+        generateKeyBtn.textContent = 'Generate New Key';
+    }
+});
+
+if (copyKeyBtn) copyKeyBtn.addEventListener('click', () => {
+    if (!generatedKey.value) return;
+    generatedKey.select();
+    document.execCommand('copy');
+
+    // Quick visual feedback
+    const originalIcon = copyKeyBtn.innerHTML;
+    copyKeyBtn.innerHTML = '✅';
+    setTimeout(() => copyKeyBtn.innerHTML = originalIcon, 1500);
+});
+
+if (accessModal) {
+    accessModal.addEventListener('click', (e) => {
+        if (e.target === accessModal) accessModal.classList.remove('active');
+    });
+}
 if (copyUrlBtn) copyUrlBtn.addEventListener('click', copyUrl);
 
 // Folder Events

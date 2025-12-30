@@ -62,16 +62,25 @@ app.use('/adminperm', (req, res, next) => {
     next();
 }, express.static(path.join(__dirname, '..', 'admin')));
 
+// Access Router
+import accessRouter from './routes/access.js';
+app.use('/api/access', accessRouter);
+
 // Root Redirect/Entry
 app.get('/', (req, res) => {
-    // Show the public listing
+    // Show the entry screen
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// Public Viewer
+app.get('/public-viewer', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'viewer.html'));
 });
 
 // Short URL for viewing pastes: /v/ID
 app.get('/v/:id', (req, res) => {
-    // Serve index.html for SPA routing on client side
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    // Serve viewer.html for SPA routing on client side
+    res.sendFile(path.join(__dirname, '..', 'public', 'viewer.html'));
 });
 
 // Error handling

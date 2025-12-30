@@ -88,22 +88,44 @@ router.put('/:id', requireAuth, async (req, res) => {
     }
 });
 
+// Helper to validate access key
+function validateAccessKey(key) {
+    if (!key) return false;
+    const row = db.prepare('SELECT id FROM access_keys WHERE key = ? AND status = ?').get(key, 'active');
+    return !!row;
+}
+
 // PUBLIC LIST
 router.get('/public-list', (req, res) => {
     try {
-        const list = db.prepare(`
-            SELECT p.id, p.title, p.views, p.createdAt, p.password, f.name as folderName, p.folderId 
+        const accessKey = req.headers['x-access-key'];
+        const hasAccess = validateAccessKey(accessKey);
+
+        let query = `
+            SELECT p.id, p.title, p.views, p.createdAt, p.password, p.isPublic, f.name as folderName, p.folderId 
             FROM pastes p 
             LEFT JOIN folders f ON p.folderId = f.id 
-            WHERE p.isPublic = 1 
-            ORDER BY p.createdAt DESC
-        `).all();
+            WHERE p.isPublic = 1
+        `;
 
-        // Sanitize: Don't send actual password, just a flag
+        if (hasAccess) {
+            // Allow private pastes too
+            query = `
+                SELECT p.id, p.title, p.views, p.createdAt, p.password, p.isPublic, f.name as folderName, p.folderId 
+                FROM pastes p 
+                LEFT JOIN folders f ON p.folderId = f.id 
+                WHERE 1=1 -- Show all (public + private)
+            `;
+        }
+
+        const list = db.prepare(query + ` ORDER BY p.createdAt DESC`).all();
+
+        // Sanitize
         const sanitized = list.map(p => ({
             ...p,
             hasPassword: !!p.password,
-            password: undefined // Remove from output
+            password: undefined,
+            isPrivate: p.isPublic === 0 // Add flag for UI
         }));
 
         res.json(sanitized);
@@ -128,8 +150,14 @@ router.get('/:id', async (req, res) => {
         const paste = db.prepare('SELECT * FROM pastes WHERE id = ?').get(req.params.id);
         if (!paste) return res.status(404).json({ error: 'Not found' });
 
-        if (paste.isPublic === 0 && (!req.session || !req.session.isAdmin)) {
-            return res.status(403).json({ error: 'Private paste' });
+        if (paste.isPublic === 0) {
+            const isAdmin = req.session && req.session.isAdmin;
+            const accessKey = req.headers['x-access-key'];
+            const hasAccess = validateAccessKey(accessKey);
+
+            if (!isAdmin && !hasAccess) {
+                return res.status(403).json({ error: 'Private paste' });
+            }
         }
 
         // Password Check Logic

@@ -97,6 +97,18 @@ migrateTable('pastes', [
     { name: 'password', type: 'TEXT' }
 ]);
 
+// Access Keys Table
+db.exec(`
+    CREATE TABLE IF NOT EXISTS access_keys (
+        id TEXT PRIMARY KEY,
+        key TEXT NOT NULL UNIQUE,
+        discordId TEXT,
+        email TEXT,
+        status TEXT DEFAULT 'active',
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+`);
+
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');
 
 export default db;

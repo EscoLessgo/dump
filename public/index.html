@@ -4,10 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Pastes - PasteBin Pro</title>
+    <title>Enter | PasteBin Pro</title>
     <link rel="stylesheet" href="/public/style.css">
     <link rel="stylesheet" href="/public/motion-blur.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+
     <script type="importmap">
     {
         "imports": {
@@ -15,37 +20,263 @@
         }
     }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/public/motion-blur.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0a0a0f;
-            color: white;
-            margin: 0;
-            padding: 2rem;
-            overflow-x: hidden;
-        }
-
+        /* Shared Styles from Viewer */
         .container {
             max-width: 900px;
             margin: 0 auto;
-            position: relative;
-            z-index: 20;
+        }
+
+        /* ensure View Viewer hides initially */
+        #view-viewer {
+            display: none;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            /* Main page is hidden */
+            background: #050505;
+            display: block;
+            /* Changed from flex to block to allow full SPA layout */
+            height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Centered Entry View */
+        #view-entry {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* ... original styles ... */
+        /* Re-paste original styles but with adaptations? 
+           Actually, the previous styles (lines 26-210) are still valid for the Entry components.
+           I just need to ensure they don't conflict. 
+        */
+
+        .main-card {
+            text-align: center;
+            z-index: 10;
         }
 
         h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #00f5ff, #7b42ff);
+            font-size: 4rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(to right, #fff, #888);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 2rem;
+            font-weight: 800;
+            letter-spacing: -2px;
         }
 
-        /* ... existing styles ... */
+        .button-container {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .entry-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 3rem;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .entry-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-public {
+            border-color: rgba(0, 245, 255, 0.3);
+        }
+
+        .btn-public:hover {
+            background: rgba(0, 245, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.2);
+        }
+
+        .btn-private {
+            border-color: rgba(255, 0, 80, 0.3);
+        }
+
+        .btn-private:hover {
+            background: rgba(255, 0, 80, 0.1);
+            box-shadow: 0 0 30px rgba(255, 0, 80, 0.2);
+        }
+
+        .tech-hint {
+            margin-top: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #ff0050;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+            z-index: 100;
+            /* Force above overlays */
+            pointer-events: auto;
+            /* Ensure clickable */
+        }
+
+        .tech-hint::before {
+            content: '> ';
+            opacity: 0.5;
+        }
+
+        .tech-hint:hover {
+            text-shadow: 0 0 8px #ff0050;
+            opacity: 1;
+        }
+
+        .entry-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 3rem;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            z-index: 100;
+            /* Force above overlays */
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            /* Darker background since blur is removed */
+            display: none;
+            /* Changed from flex + opacity to pure display toggle */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            /* Activate flex when active class is present */
+        }
+
+        .modal-box {
+            background: #0f0f12;
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid #333;
+            width: 400px;
+            max-width: 90%;
+            position: relative;
+            z-index: 10000;
+            display: block;
+            /* Ensure visibility */
+        }
+
+        /* Removed complex transforms/animations that might glitch in Firefox */
+
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: #050505;
+            border: 1px solid #333;
+            color: white;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-submit.red {
+            background: #ff0050;
+            color: white;
+        }
+
+        .btn-submit.blue {
+            background: #00f5ff;
+            color: black;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            cursor: pointer;
+            color: #666;
+            font-size: 1.2rem;
+            padding: 5px;
+            line-height: 1;
+        }
     </style>
 </head>
 
 <body>
+
     <div id="loading-screen"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #000; display: flex; align-items: center; justify-content: center; pointer-events: none;">
         <div id="loading-info"
@@ -53,14 +284,13 @@
             Loading...</div>
     </div>
 
-    <!-- Motion Blur Cursor Container -->
+    <!-- Motion Blur -->
     <div id="motion-blur-container"></div>
 
-    <!-- Audio Elements (Persistent) -->
+    <!-- Audio -->
     <audio id="bgAudio" loop preload="auto">
         <source src="/public/audio.flac" type="audio/flac">
         <source src="/public/song.flac" type="audio/flac">
-        Your browser does not support the audio element.
     </audio>
 
     <div id="volumeControl" class="volume-control">
@@ -72,14 +302,12 @@
             </svg>
         </div>
         <button id="imgVolumeBtn" class="btn-icon volume-btn" title="Toggle Volume">
-            <!-- Muted Icon by default -->
             <svg id="iconMuted" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2">
                 <path d="M11 5L6 9H2V15H6L11 19V5Z" />
                 <line x1="23" y1="9" x2="17" y2="15" />
                 <line x1="17" y1="9" x2="23" y2="15" />
             </svg>
-            <!-- Sound Icon (hidden) -->
             <svg id="iconSound" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" style="display: none;">
                 <path d="M11 5L6 9H2V15H6L11 19V5Z" />
@@ -89,138 +317,243 @@
         </button>
     </div>
 
-    <!-- Main Container -->
-    <div class="container">
+    <!-- View: ENTRY -->
+    <div id="view-entry">
+        <div class="bg-grid"></div>
 
-        <!-- View: List -->
-        <div id="listView">
-            <header>
-                <h1>Public Pastes</h1>
-            </header>
-            <div id="pasteList" class="paste-list">
-                <p>Loading pastes...</p>
+        <div class="main-card">
+            <h1>PASTEBIN PRO</h1>
+
+            <div class="button-container" style="position: relative; z-index: 2147483647;">
+                <a href="/public" id="btnPublicAccess" class="entry-btn btn-public"
+                    onclick="console.log('Public Clicked'); event.preventDefault(); navigateTo('/public');"
+                    style="pointer-events: auto; display: inline-block; text-decoration: none; text-align: center; cursor: pointer; position: relative; z-index: 2147483647;">
+                    Public Access
+                </a>
+                <a href="#" id="btnPrivateAccess" class="entry-btn btn-private"
+                    onclick="console.log('Private Clicked'); openKeyModal(); return false;"
+                    style="pointer-events: auto; display: inline-block; text-decoration: none; text-align: center; cursor: pointer; position: relative; z-index: 2147483647;">
+                    Private Access
+                    <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 0.5rem;">Access Key Required</div>
+                </a>
             </div>
-        </div>
 
-        <!-- View: Detail (Initially Hidden) -->
-        <div id="detailView" style="display: none;">
-            <header class="header">
-                <div class="logo">
-                    <div class="logo-icon">
-                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                            <path
-                                d="M8 4L24 4C26.2091 4 28 5.79086 28 8V24C28 26.2091 26.2091 28 24 28H8C5.79086 28 4 26.2091 4 24V8C4 5.79086 5.79086 4 8 4Z"
-                                stroke="url(#gradient1)" stroke-width="2" />
-                            <path d="M10 12H22M10 16H22M10 20H18" stroke="url(#gradient2)" stroke-width="2"
-                                stroke-linecap="round" />
-                            <defs>
-                                <linearGradient id="gradient1" x1="4" y1="4" x2="28" y2="28">
-                                    <stop stop-color="#00f5ff" />
-                                    <stop offset="1" stop-color="#7b42ff" />
-                                </linearGradient>
-                                <linearGradient id="gradient2" x1="10" y1="12" x2="22" y2="20">
-                                    <stop stop-color="#ff006e" />
-                                    <stop offset="1" stop-color="#ffbe0b" />
-                                </linearGradient>
-                            </defs>
-                        </svg>
-                    </div>
-                    <div class="logo-text">
-                        <h1>PasteBin Pro</h1>
-                        <span class="badge">Public View</span>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <button id="backBtn" class="btn btn-secondary">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        Back
-                    </button>
-                    <button id="rawBtn" class="btn btn-glass">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M3 3H17M3 7H17M3 11H17M3 15H17" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" />
-                        </svg>
-                        Raw
-                    </button>
-                    <button id="copyBtn" class="btn btn-secondary">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="2" />
-                            <path d="M13 3H5C3.89543 3 3 3.89543 3 5V13" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                        Copy
-                    </button>
-                </div>
-            </header>
+            <script>
+                document.addEventListener('click', function (e) {
+                    console.log('Clicked element:', e.target);
+                    console.log('Coordinates:', e.clientX, e.clientY);
+                }, true);
+            </script>
 
-            <main id="mainContent">
-                <!-- Loading State -->
-                <div id="detailLoading" class="state-container" style="display: none;">
-                    <div class="loader"></div>
-                    <p>Loading paste...</p>
-                </div>
-
-                <!-- Not Found / Error -->
-                <div id="notFoundState" class="state-container" style="display: none;">
-                    <h2>Paste Not Found</h2>
-                    <p>This paste might not exist or has been deleted.</p>
-                </div>
-
-                <!-- Paste Content -->
-                <div id="pasteView" style="display: none;">
-                    <div class="paste-header">
-                        <div class="paste-info">
-                            <h2 id="pasteTitle">Loading...</h2>
-                            <div class="paste-meta">
-                                <span class="language-tag" id="pasteLanguage">plaintext</span>
-                                <span class="meta-item" id="pasteViews">0 views</span>
-                                <span class="meta-item" id="pasteDate">Just now</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="code-container">
-                        <div class="code-header">
-                            <div class="code-title" id="codeTitle">code.txt</div>
-                            <div class="code-actions">
-                                <button id="toggleLineNumbers" class="code-action-btn" title="Toggle line numbers">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                        <path d="M2 4h2M2 8h2M2 12h2M6 4h8M6 8h8M6 12h8" stroke="currentColor"
-                                            stroke-width="1.5" stroke-linecap="round" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <pre id="pasteContentContainer"><code id="pasteContent" class="hljs"></code></pre>
-                    </div>
-                </div>
-            </main>
+            <a href="#" id="btnRequestAccess" class="tech-hint" onclick="openRequestModal(); return false;"
+                style="z-index: 10002; position: relative; display: inline-block; pointer-events: auto; text-decoration: none;">
+                Request an access key from Esco to view his private posts.
+            </a>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
-    <script src="/public/motion-blur.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <!-- View: VIEWER (Merged) -->
+    <div id="view-viewer" style="display: none; position: relative; z-index: 20; padding: 2rem;">
+        <div class="container" style="max-width: 900px; margin: 0 auto;">
+            <!-- List View -->
+            <div id="listView">
+                <header>
+                    <h1
+                        style="font-size: 2.5rem; background: linear-gradient(135deg, #00f5ff, #7b42ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2rem;">
+                        Public Pastes</h1>
+                </header>
+                <div id="pasteList" class="paste-list">
+                    <p>Loading pastes...</p>
+                </div>
+            </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            <!-- Detail View -->
+            <div id="detailView" style="display: none;">
+                <header class="header">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <path
+                                    d="M8 4L24 4C26.2091 4 28 5.79086 28 8V24C28 26.2091 26.2091 28 24 28H8C5.79086 28 4 26.2091 4 24V8C4 5.79086 5.79086 4 8 4Z"
+                                    stroke="url(#gradient1)" stroke-width="2" />
+                                <path d="M10 12H22M10 16H22M10 20H18" stroke="url(#gradient2)" stroke-width="2"
+                                    stroke-linecap="round" />
+                                <defs>
+                                    <linearGradient id="gradient1" x1="4" y1="4" x2="28" y2="28">
+                                        <stop stop-color="#00f5ff" />
+                                        <stop offset="1" stop-color="#7b42ff" />
+                                    </linearGradient>
+                                    <linearGradient id="gradient2" x1="10" y1="12" x2="22" y2="20">
+                                        <stop stop-color="#ff006e" />
+                                        <stop offset="1" stop-color="#ffbe0b" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="logo-text">
+                            <h1>PasteBin Pro</h1>
+                            <span class="badge">Public View</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="backBtn" class="btn btn-secondary">Back</button>
+                        <button id="rawBtn" class="btn btn-glass">Raw</button>
+                        <button id="copyBtn" class="btn btn-secondary">Copy</button>
+                    </div>
+                </header>
+                <main id="mainContent">
+                    <div id="detailLoading" class="state-container" style="display: none;">
+                        <div class="loader"></div>
+                        <p>Loading paste...</p>
+                    </div>
+                    <div id="notFoundState" class="state-container" style="display: none;">
+                        <h2>Paste Not Found</h2>
+                    </div>
+                    <div id="pasteViewContent" style="display: none;">
+                        <div class="paste-header">
+                            <div class="paste-info">
+                                <h2 id="pasteTitle">Loading...</h2>
+                                <div class="paste-meta">
+                                    <span class="language-tag" id="pasteLanguage">plaintext</span>
+                                    <span class="meta-item" id="pasteViews">0 views</span>
+                                    <span class="meta-item" id="pasteDate">Just now</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-container">
+                            <div class="code-header">
+                                <div class="code-title" id="codeTitle">code.txt</div>
+                            </div>
+                            <pre id="pasteContentContainer"><code id="pasteContent" class="hljs"></code></pre>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Entry Modal -->
+    <div id="keyModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="close-modal" onclick="closeModals()">✕</div>
+            <h2 style="margin-top: 0;">Enter Access Key</h2>
+            <div class="input-group">
+                <label>Access Key</label>
+                <input type="password" id="accessKeyInput" placeholder="sk-...">
+            </div>
+            <button type="button" class="btn-submit blue" onclick="submitKey()">Unlock</button>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem; text-align: center;">
+                Don't have one? <a href="#" onclick="openRequestModal(); return false;" style="color: #00f5ff;">Request
+                    Access</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Request Access Modal -->
+    <div id="requestModal" class="modal-overlay">
+        <!-- View 1: Auth Selection -->
+        <div id="req-view-1" class="modal-box">
+            <div class="close-modal" onclick="closeModals()">✕</div>
+            <h2 style="margin-top: 0; color: #ff0050;">Request Access</h2>
+            <p style="color: #888; font-size: 0.9rem; margin-bottom: 2rem;">
+                You must verify your identity before requesting a key.
+            </p>
+            <div class="auth-buttons">
+                <button type="button" class="btn-submit auth-discord" onclick="startDiscordAuth()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right: 10px; vertical-align: bottom;">
+                        <path fill="currentColor"
+                            d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.956 2.42-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.946 2.42-2.157 2.419z" />
+                    </svg>
+                    Log in with Discord (Recommended)
+                </button>
+                <button type="button" class="btn-submit auth-manual" onclick="showManualInput()">
+                    Manual Request
+                </button>
+            </div>
+        </div>
+
+        <!-- View 2: Manual Request Input -->
+        <div id="req-view-manual" class="modal-box" style="display: none;">
+            <div class="close-modal" onclick="resetRequestModal()">✕</div>
+            <h2 style="margin-top: 0; color: #ff0050;">Manual Request</h2>
+            <div class="input-group">
+                <label>Your Identity (Discord User / Email)</label>
+                <input type="text" id="manualIdentity" placeholder="Who are you?">
+            </div>
+            <div class="input-group">
+                <label>Reason</label>
+                <textarea id="manualReason" rows="6"
+                    placeholder="To gain access, explain how you met or know Esco. In addition, please state any specialties that will help him identify you better assuming there are any :)"></textarea>
+            </div>
+            <p
+                style="color: #888; font-size: 0.8rem; margin-bottom: 2rem; border-left: 2px solid #555; padding-left: 10px;">
+                <strong>Note:</strong> You will still be required to confirm your identity later before receiving a key.
+                Verification via Discord is faster and preferred.
+            </p>
+            <button type="button" class="btn-submit red" onclick="submitManualRequest()">Send Request</button>
+        </div>
+
+        <!-- View 4: Request Form -->
+        <div id="req-view-4" class="modal-box" style="display: none;">
+            <div class="close-modal" onclick="closeModals()">✕</div>
+            <h2 style="margin-top: 0; color: #ff0050;">Submit Request</h2>
+            <div class="input-group">
+                <label>Verified ID</label>
+                <input type="text" id="verifiedId" readonly style="opacity: 0.5;">
+            </div>
+            <div class="input-group">
+                <label>Reason</label>
+                <textarea id="reqReason" rows="6"
+                    placeholder="To gain access, explain how you met or know Esco. In addition, please state any specialties that will help him identify you better assuming there are any :)"></textarea>
+            </div>
+            <button type="button" class="btn-submit red" onclick="submitFinalRequest()">Send Request</button>
+        </div>
+    </div>
+
+    <!-- Success Popup -->
+    <div id="successPopup" class="modal-overlay">
+        <div class="modal-box" style="text-align: center;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+            <h2>Request Sent!</h2>
+            <p style="color: #ccc; margin-bottom: 2rem;">
+                Your request has been forwarded to Esco. You will receive further instructions if approved.
+            </p>
+            <button type="button" class="btn-submit blue" onclick="window.location.reload()">Return to Home</button>
+        </div>
+    </div>
+
+    <!-- Additional Styles for Auth -->
+    <style>
+        .auth-discord {
+            background: #5865F2;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
         }
-    }
-    </script>
+
+        .auth-discord:hover {
+            background: #4752C4;
+        }
+
+        .auth-email {
+            background: #333;
+            color: white;
+        }
+
+        .auth-email:hover {
+            background: #444;
+        }
+    </style>
+
     <script type="module">
         import { initLoadingShader } from '/public/loading-shader.js';
 
+        // Initialize shader
         initLoadingShader('loading-screen');
 
+        // Hide loader logic
         window.hideLoader = function () {
             const loader = document.getElementById('loading-screen');
             if (loader && !loader.classList.contains('fading')) {
@@ -230,13 +563,14 @@
                 setTimeout(() => loader.remove(), 1000);
             }
         };
-        setTimeout(window.hideLoader, 2500);
+        // Fallback
+        setTimeout(window.hideLoader, 2000);
     </script>
 
     <script src="/shared/api.js"></script>
 
-    <!-- Unified App Logic -->
     <script>
+        // --- 1. Audio Logic ---
         const audio = document.getElementById('bgAudio');
         const volBtn = document.getElementById('imgVolumeBtn');
         const iconMuted = document.getElementById('iconMuted');
@@ -244,16 +578,24 @@
         const arrow = document.getElementById('volumeArrow');
 
         let hasInteracted = false;
-        audio.volume = 0.02;
+        audio.volume = 0.2; // Increase start volume
 
         function tryPlayAudio() {
-            if (!hasInteracted && audio.paused) {
-                hasInteracted = true;
-                audio.play().then(() => {
+            if (hasInteracted) return;
+
+            const playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    hasInteracted = true;
                     updateAudioIcon();
+                    console.log("Audio playing");
+                    // Show arrow hint
                     arrow.classList.add('visible');
                     setTimeout(() => arrow.classList.remove('visible'), 4000);
-                }).catch(e => console.log("Audio play deferred", e));
+                }).catch(error => {
+                    console.log("Autoplay prevented. Waiting for interaction.", error);
+                });
             }
         }
 
@@ -284,60 +626,93 @@
             toggleAudio();
         });
 
-        // Global listeners for first interaction
-        ['click', 'keydown', 'touchstart'].forEach(evt =>
-            document.addEventListener(evt, tryPlayAudio, { once: true })
+        // Try playing immediately
+        tryPlayAudio();
+
+        // Global interaction listeners - aggressive
+        const interactEvents = ['click', 'keydown', 'touchstart', 'mousemove', 'scroll'];
+        interactEvents.forEach(evt =>
+            window.addEventListener(evt, tryPlayAudio, { once: true, capture: true })
         );
 
-        // --- Routing & App Logic ---
+
+        // --- 2. SPA Navigation ---
+
+        // Handle Back/Forward
+        window.addEventListener('popstate', handleRoute);
+        // Handle Initial Load
+        document.addEventListener('DOMContentLoaded', handleRoute);
+
+        function navigateTo(path) {
+            console.log("Navigating to:", path);
+            window.history.pushState({}, '', path);
+            handleRoute();
+        }
+
+        function handleRoute() {
+            const path = window.location.pathname;
+
+            // Ensure audio is trying to play on route change (interaction happened)
+            if (audio.paused && hasInteracted) {
+                audio.play().catch(e => console.log('Resume play failed', e));
+                updateAudioIcon();
+            }
+
+            // Entry Page
+            if (path === '/' || path === '/index.html') {
+                document.getElementById('view-entry').style.display = 'flex';
+                document.getElementById('view-viewer').style.display = 'none';
+                document.body.style.overflow = 'hidden'; // Lock scroll on entry
+            }
+            // Public Viewer
+            else if (path.startsWith('/public') || path.startsWith('/v/')) {
+                document.getElementById('view-entry').style.display = 'none';
+                document.getElementById('view-viewer').style.display = 'block';
+                document.body.style.overflow = 'auto'; // Allow scroll
+
+                if (path.startsWith('/v/')) {
+                    const id = path.split('/')[2];
+                    showDetail(id);
+                } else {
+                    showList();
+                }
+            }
+        }
+
+
+        // --- 3. Viewer Logic ---
         const storage = new PasteStorage();
         const listView = document.getElementById('listView');
         const detailView = document.getElementById('detailView');
         const pasteListContainer = document.getElementById('pasteList');
-
-        // View Elements
         const detailLoading = document.getElementById('detailLoading');
         const notFoundState = document.getElementById('notFoundState');
-        const pasteViewContent = document.getElementById('pasteView');
+        const pasteViewContent = document.getElementById('pasteViewContent');
+
+        // Elements for detail
         const pasteTitle = document.getElementById('pasteTitle');
         const pasteLanguage = document.getElementById('pasteLanguage');
         const pasteViews = document.getElementById('pasteViews');
         const pasteDate = document.getElementById('pasteDate');
         const pasteContent = document.getElementById('pasteContent');
-        const codeTitle = document.getElementById('codeTitle');
-        const container = document.querySelector('.container');
 
-        // Navigation
-        window.addEventListener('popstate', handleRoute);
-        document.addEventListener('DOMContentLoaded', handleRoute);
-
-        function handleRoute() {
-            const path = window.location.pathname;
-            if (path.startsWith('/v/')) {
-                const id = path.split('/')[2];
-                showDetail(id);
-            } else {
-                showList();
-            }
+        async function showList() {
+            detailView.style.display = 'none';
+            listView.style.display = 'block';
+            await loadPastes();
         }
 
-        function navigateTo(path) {
-            window.history.pushState({}, '', path);
-            handleRoute();
-        }
-
-        document.getElementById('backBtn').addEventListener('click', () => {
-            navigateTo('/');
-        });
-
-        // --- List View Logic ---
         async function loadPastes() {
             try {
-                const res = await fetch('/api/pastes/public-list');
+                const headers = { 'Content-Type': 'application/json' };
+                const key = localStorage.getItem('private_access_key');
+                if (key) headers['x-access-key'] = key;
+
+                const res = await fetch('/api/pastes/public-list', { headers });
                 const pastes = await res.json();
 
                 if (pastes.length === 0) {
-                    pasteListContainer.innerHTML = '<p>No public pastes found.</p>';
+                    pasteListContainer.innerHTML = '<p>No pastes found.</p>';
                     return;
                 }
 
@@ -359,7 +734,7 @@
                 }
                 for (const [name, items] of Object.entries(folders)) {
                     html += `
-                        <details class="folder-group">
+                        <details class="folder-group" open>
                             <summary class="folder-title">📁 ${name} <span class="folder-count">${items.length}</span></summary>
                             <div class="folder-items">${items.map(p => renderPasteItem(p)).join('')}</div>
                         </details>
@@ -367,7 +742,7 @@
                 }
                 pasteListContainer.innerHTML = html;
 
-                // Attach click handlers for SPA nav
+                // Highjack links
                 document.querySelectorAll('a.paste-item').forEach(link => {
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -394,40 +769,38 @@
             `;
         }
 
-        // --- Detail View Logic ---
         async function showDetail(id) {
             listView.style.display = 'none';
             detailView.style.display = 'block';
-            container.style.maxWidth = '1200px'; // Wider for code view
 
             detailLoading.style.display = 'flex';
             notFoundState.style.display = 'none';
             pasteViewContent.style.display = 'none';
 
             try {
-                const paste = await storage.getPaste(id);
+                let paste = null;
+                try {
+                    paste = await storage.getPaste(id);
+                } catch (e) {
+                    if (e.message.includes('401')) {
+                        const pwd = prompt('🔒 Password required:');
+                        if (!pwd) throw new Error('Cancelled');
+                        paste = await storage.getPaste(id, true, pwd);
+                    } else {
+                        throw e;
+                    }
+                }
+
                 if (!paste) throw new Error('Not found');
 
                 renderPasteDetail(paste);
                 detailLoading.style.display = 'none';
                 pasteViewContent.style.display = 'block';
+
             } catch (err) {
-                if (err.message.includes('401')) {
-                    const pwd = prompt('🔒 Password required:');
-                    if (pwd) {
-                        try {
-                            const p = await storage.getPaste(id, true, pwd);
-                            renderPasteDetail(p);
-                            detailLoading.style.display = 'none';
-                            pasteViewContent.style.display = 'block';
-                            return;
-                        } catch {
-                            alert('Incorrect password');
-                        }
-                    }
-                }
+                console.error(err);
                 detailLoading.style.display = 'none';
-                notFoundState.style.display = 'flex';
+                if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
             }
         }
 
@@ -436,9 +809,7 @@
             pasteLanguage.textContent = paste.language;
             pasteViews.textContent = `${paste.views} views`;
             pasteDate.textContent = new Date(paste.createdAt).toLocaleString();
-            codeTitle.textContent = 'code.txt'; // Simplification
 
-            // Syntax logic
             pasteContent.className = `hljs language-${paste.language}`;
             if (paste.language === 'markdown') {
                 pasteContent.innerHTML = marked.parse(paste.content);
@@ -446,33 +817,206 @@
                 pasteContent.textContent = paste.content;
                 hljs.highlightElement(pasteContent);
             }
-
-            // Re-setup copy/raw handlers specifically for this paste if needed
-            // (For brevity, assuming global handlers or re-attaching here)
-            window.currentViewedPaste = paste; // Store for buttons
+            window.currentViewedPaste = paste;
         }
 
-        function showList() {
-            detailView.style.display = 'none';
-            listView.style.display = 'block';
-            container.style.maxWidth = '900px';
-            loadPastes(); // Refresh list to update view counts?
-        }
-
-        // Initial Load
-        // handleRoute() is called by DOMContentLoaded
-
-        // Button Handlers for Detail View
+        // Viewer Buttons
+        document.getElementById('backBtn').addEventListener('click', () => navigateTo('/public'));
         document.getElementById('copyBtn').addEventListener('click', () => {
             if (window.currentViewedPaste) navigator.clipboard.writeText(window.currentViewedPaste.content);
         });
         document.getElementById('rawBtn').addEventListener('click', () => {
             if (window.currentViewedPaste) {
-                const newWindow = window.open();
-                newWindow.document.write(`<pre>${window.currentViewedPaste.content}</pre>`);
+                const win = window.open();
+                win.document.write(`<pre>${window.currentViewedPaste.content}</pre>`);
             }
         });
 
+
+        // --- 4. Auth & Modal Logic (Restored) ---
+        let currentEmail = '';
+        let authMethod = '';
+
+        window.openKeyModal = function () {
+            closeModals();
+            document.getElementById('keyModal').classList.add('active');
+        }
+
+        window.openRequestModal = function () {
+            console.log("Opening request modal");
+            closeModals();
+            resetRequestModal();
+            document.getElementById('requestModal').classList.add('active');
+        }
+
+        window.closeModals = function () {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+        }
+
+        window.switchView = function (id) {
+            document.querySelectorAll('#requestModal .modal-box').forEach(el => el.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+        }
+
+        window.resetRequestModal = function () {
+            switchView('req-view-1');
+            document.getElementById('manualIdentity').value = '';
+            document.getElementById('manualReason').value = '';
+            document.getElementById('reqReason').value = '';
+        }
+
+        window.startDiscordAuth = function () {
+            const width = 500;
+            const height = 800;
+            const left = (window.screen.width / 2) - (width / 2);
+            const top = (window.screen.height / 2) - (height / 2);
+
+            const popup = window.open('/api/access/auth/discord', 'Discord Auth', `width=${width},height=${height},top=${top},left=${left}`);
+
+            window.addEventListener('message', function onMessage(e) {
+                if (e.data.type === 'DISCORD_VERIFIED') {
+                    window.removeEventListener('message', onMessage);
+                    currentEmail = e.data.id;
+                    authMethod = 'Discord';
+                    document.getElementById('verifiedId').value = currentEmail;
+                    switchView('req-view-4');
+                }
+            });
+        }
+
+        window.showManualInput = function () {
+            switchView('req-view-manual');
+        }
+
+        window.submitManualRequest = async function () {
+            const contact = document.getElementById('manualIdentity').value;
+            const reason = document.getElementById('manualReason').value;
+            const btn = document.querySelector('#req-view-manual .btn-submit');
+
+            if (!contact || !reason) return alert('Please fill in all fields.');
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('/api/access/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contact, reason, method: 'Manual' })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    closeModals();
+                    document.getElementById('successPopup').classList.add('active');
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Request';
+            }
+        }
+
+        window.submitFinalRequest = async function () {
+            const reason = document.getElementById('reqReason').value;
+            const btn = document.querySelector('#req-view-4 .btn-submit');
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('/api/access/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contact: currentEmail, reason, method: authMethod })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    closeModals();
+                    document.getElementById('successPopup').classList.add('active');
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Request';
+            }
+        }
+
+        window.submitKey = async function () {
+            const key = document.getElementById('accessKeyInput').value;
+            const btn = document.querySelector('#keyModal .btn-submit');
+            if (!key) return alert('Enter a key.');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            try {
+                const res = await fetch('/api/access/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('private_access_key', data.key);
+                    closeModals();
+                    navigateTo('/public'); // Changed from window.location.href to SPA nav
+                } else {
+                    alert('Invalid key.');
+                }
+            } catch (e) {
+                alert('Verification failed.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Unlock';
+            }
+        }
+
+        // Explicit Event Listeners for Entry Buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnPublic = document.getElementById('btnPublicAccess');
+            const btnPrivate = document.getElementById('btnPrivateAccess');
+            const btnRequest = document.getElementById('btnRequestAccess');
+
+            if (btnPublic) {
+                btnPublic.onclick = null; // Clear inline just in case
+                btnPublic.addEventListener('click', () => navigateTo('/public'));
+            }
+
+            if (btnPrivate) {
+                btnPrivate.onclick = null;
+                btnPrivate.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openKeyModal();
+                });
+            }
+
+            if (btnRequest) {
+                btnRequest.onclick = null;
+                btnRequest.addEventListener('click', (e) => {
+                    console.log("Request Clicked via Listener");
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openRequestModal();
+                });
+            }
+        });
+
+        // Glitch effect on hint
+        const hint = document.querySelector('.tech-hint');
+        if (hint) {
+            setInterval(() => {
+                if (Math.random() > 0.95) {
+                    hint.style.opacity = 0.5;
+                    setTimeout(() => hint.style.opacity = 0.8, 50);
+                }
+            }, 100);
+        }
     </script>
 </body>
 

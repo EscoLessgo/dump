@@ -123,7 +123,7 @@ db.exec(`
 
 // Link keys to users
 migrateTable('access_keys', [
-    { name: 'userId', type: 'TEXT REFERENCES users(id)' }
+    { name: 'userId', type: 'TEXT' }
 ]);
 
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');

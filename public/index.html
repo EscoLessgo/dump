@@ -712,35 +712,50 @@
                 const pastes = await res.json();
 
                 if (pastes.length === 0) {
-                    pasteListContainer.innerHTML = '<p>No pastes found.</p>';
+                    pasteListContainer.innerHTML = '<div class="empty-state"><p>No pastes found.</p></div>';
                     return;
                 }
 
-                const folders = {};
-                const noFolder = [];
+                const renderGroup = (items, title, icon) => {
+                    if (items.length === 0) return '';
+                    let html = `<div class="paste-section"><h2 class="section-title" style="margin: 2rem 0 1rem; color: #fff; font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">${icon} ${title}</h2>`;
 
-                pastes.forEach(p => {
-                    if (p.folderName) {
-                        if (!folders[p.folderName]) folders[p.folderName] = [];
-                        folders[p.folderName].push(p);
-                    } else {
-                        noFolder.push(p);
+                    const folders = {};
+                    const loose = [];
+
+                    items.forEach(p => {
+                        if (p.folderName) {
+                            if (!folders[p.folderName]) folders[p.folderName] = [];
+                            folders[p.folderName].push(p);
+                        } else {
+                            loose.push(p);
+                        }
+                    });
+
+                    if (loose.length > 0) {
+                        html += `<div class="folder-group">${loose.map(p => renderPasteItem(p)).join('')}</div>`;
                     }
-                });
+                    for (const [name, folderItems] of Object.entries(folders)) {
+                        html += `
+                            <details class="folder-group" open>
+                                <summary class="folder-title">📁 ${name} <span class="folder-count">${folderItems.length}</span></summary>
+                                <div class="folder-items">${folderItems.map(p => renderPasteItem(p)).join('')}</div>
+                            </details>
+                        `;
+                    }
+                    html += `</div>`;
+                    return html;
+                };
 
-                let html = '';
-                if (noFolder.length > 0) {
-                    html += `<div class="folder-group">${noFolder.map(p => renderPasteItem(p)).join('')}</div>`;
-                }
-                for (const [name, items] of Object.entries(folders)) {
-                    html += `
-                        <details class="folder-group" open>
-                            <summary class="folder-title">📁 ${name} <span class="folder-count">${items.length}</span></summary>
-                            <div class="folder-items">${items.map(p => renderPasteItem(p)).join('')}</div>
-                        </details>
-                    `;
-                }
-                pasteListContainer.innerHTML = html;
+                const privatePastes = pastes.filter(p => p.isPrivate);
+                const publicPastes = pastes.filter(p => !p.isPrivate);
+
+                let finalHtml = '';
+                // Render Private First if available
+                if (privatePastes.length > 0) finalHtml += renderGroup(privatePastes, 'Private Pastes', '🔒');
+                if (publicPastes.length > 0) finalHtml += renderGroup(publicPastes, 'Public Pastes', '🌍');
+
+                pasteListContainer.innerHTML = finalHtml || '<p>No pastes found.</p>';
 
                 // Highjack links
                 document.querySelectorAll('a.paste-item').forEach(link => {

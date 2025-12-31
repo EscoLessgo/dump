@@ -254,6 +254,12 @@
             <div id="statsContent" class="stats-grid">
                 <!-- Dynamically populated -->
             </div>
+            <div style="padding: 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button id="clearAnalyticsBtn" class="btn btn-secondary"
+                    style="color: #ff0050; border-color: rgba(255,0,80,0.3); width: 100%;">
+                    ⚠️ Clear All Analytics DB
+                </button>
+            </div>
         </div>
     </div>
 
@@ -327,6 +333,26 @@
                 </div>
                 <button id="generateKeyBtn" class="btn btn-primary btn-large"
                     style="background: #ff0050; color: white;">Generate New Key</button>
+            </div>
+
+            <div class="key-list-wrapper"
+                style="padding: 0 20px 20px; text-align: left; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; margin-bottom: 10px;">
+                    <h4
+                        style="color: #888; margin: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                        History</h4>
+                    <button id="refreshKeysBtn" class="btn-icon" style="opacity:0.6;"><svg width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6" />
+                            <path d="M1 20v-6h6" />
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                        </svg></button>
+                </div>
+                <div id="keyList"
+                    style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+                    <!-- Keys -->
+                </div>
             </div>
         </div>
     </div>

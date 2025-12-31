@@ -277,4 +277,30 @@ router.get('/auth/discord/callback',
     }
 );
 
+// --- Admin Routes ---
+
+function isAdmin(req, res, next) {
+    if (req.session && req.session.isAdmin) return next();
+    res.status(403).json({ error: 'Admin only' });
+}
+
+router.get('/keys', isAdmin, (req, res) => {
+    try {
+        const keys = db.prepare(`
+            SELECT k.*, u.email as userEmail, u.discordId as userDiscordId
+            FROM access_keys k
+            LEFT JOIN users u ON k.userId = u.id
+            ORDER BY k.createdAt DESC
+        `).all();
+        res.json(keys);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/keys/:id', isAdmin, (req, res) => {
+    try {
+        db.prepare('DELETE FROM access_keys WHERE id = ?').run(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;

@@ -735,3 +735,87 @@ async function toggleVisibility(id) {
         }
     }
 }
+
+// --- NEW ADMIN FEATURES ---
+
+async function loadKeys() {
+    const keyList = document.getElementById('keyList');
+    if (!keyList) return;
+
+    keyList.innerHTML = '<p style="padding:10px; color:#666;">Loading...</p>';
+
+    try {
+        const res = await fetch('/api/access/keys');
+        const keys = await res.json();
+
+        if (!keys.length) {
+            keyList.innerHTML = '<p style="padding:10px; color:#666;">No keys found.</p>';
+            return;
+        }
+
+        keyList.innerHTML = keys.map(k => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div style="overflow: hidden; text-overflow: ellipsis; flex: 1;">
+                    <div style="color: #fff; font-family: monospace;">${k.key}</div>
+                    <div style="color: #666; font-size: 0.75rem;">
+                        ${k.userEmail ? k.userEmail : (k.userId || 'Unclaimed')} • ${new Date(k.createdAt).toLocaleDateString()}
+                    </div>
+                </div>
+                <button onclick="deleteKey('${k.id}')" class="btn-icon" style="color: #ff0050; opacity: 0.7;" title="Revoke">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            </div>
+        `).join('');
+    } catch (e) {
+        keyList.innerHTML = '<p style="padding:10px; color:red;">Error loading keys.</p>';
+    }
+}
+
+async function deleteKey(id) {
+    if (!confirm('Revoke this access key? User will lose access immediately.')) return;
+    try {
+        await fetch(`/api/access/keys/${id}`, { method: 'DELETE' });
+        loadKeys();
+    } catch (e) { alert('Failed to delete'); }
+}
+
+// Global scope binding for inline onclick
+window.deleteKey = deleteKey;
+
+// Bind Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const refreshKeysBtn = document.getElementById('refreshKeysBtn');
+    if (refreshKeysBtn) refreshKeysBtn.addEventListener('click', loadKeys);
+
+    const clearAnalyticsBtn = document.getElementById('clearAnalyticsBtn');
+    if (clearAnalyticsBtn) clearAnalyticsBtn.addEventListener('click', async () => {
+        if (!confirm('⚠️ ARE YOU SURE? \n\nThis will wipe ALL analytics data from the database.\nThis cannot be undone.')) return;
+
+        clearAnalyticsBtn.disabled = true;
+        clearAnalyticsBtn.textContent = 'Clearing...';
+        try {
+            const res = await fetch('/api/pastes/analytics/all', { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                alert('Analytics Database Cleared.');
+                // Refresh stats if open
+                if (typeof showStats === 'function') showStats();
+            } else {
+                alert('Failed: ' + (data.error || 'Unknown'));
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            clearAnalyticsBtn.disabled = false;
+            clearAnalyticsBtn.textContent = '⚠️ Clear All Analytics DB';
+        }
+    });
+
+    // Update Access Btn to load keys
+    const accessBtn = document.getElementById('accessBtn');
+    if (accessBtn) {
+        accessBtn.addEventListener('click', () => {
+            loadKeys();
+        });
+    }
+});

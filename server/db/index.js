@@ -128,10 +128,4 @@ migrateTable('access_keys', [
 
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');
 
-// EMERGENCY: Fix migration issue where default 1 made everything public
-// This ensures all pastes are Private by default until explicitly set otherwise
-// Admin can toggle them back to Public.
-db.exec('UPDATE pastes SET isPublic = 0');
-console.log('🔒 SECURED: All pastes set to Private (isPublic=0)');
-
 export default db;

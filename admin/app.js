@@ -297,6 +297,9 @@ async function loadPasteList() {
                     ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
                 </div>
                 <div class="paste-item-actions">
+                    <button onclick="event.stopPropagation(); toggleVisibility('${paste.id}')" class="btn-small btn-glass" title="${paste.isPublic ? 'Make Private' : 'Make Public'}">
+                        ${paste.isPublic ? '🔒' : '🌍'}
+                    </button>
                     <button onclick="event.stopPropagation(); showAnalytics('${paste.id}')" class="btn-small btn-glass" title="View Analytics">
                         📈 Analytics
                     </button>
@@ -696,5 +699,39 @@ async function handleImageUpload(e) {
         uploadImageBtn.childNodes[0].textContent = originalText;
         uploadImageBtn.disabled = false;
         imageInput.value = ''; // Reset input
+    }
+}
+
+async function toggleVisibility(id) {
+    const btn = event.target.closest('button');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳';
+    }
+
+    try {
+        // Fetch full paste data (pass false to trackView to avoid incrementing views)
+        const paste = await storage.getPaste(id, false);
+        if (!paste) throw new Error('Paste not found');
+
+        const config = {
+            title: paste.title,
+            language: paste.language,
+            isPublic: !paste.isPublic, // TOGGLE
+            burnAfterRead: paste.burnAfterRead,
+            expiresAt: paste.expiresAt,
+            folderId: paste.folderId,
+            password: paste.password
+        };
+
+        // We use updatePaste which calls PUT /:id
+        await storage.updatePaste(id, paste.content, config);
+        await loadPasteList();
+    } catch (e) {
+        console.error(e);
+        alert('Toggle failed: ' + e.message);
+        if (btn) {
+            btn.disabled = false;
+        }
     }
 }

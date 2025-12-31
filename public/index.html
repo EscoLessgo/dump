@@ -950,7 +950,7 @@
         }
 
         window.submitKey = async function () {
-            const key = document.getElementById('accessKeyInput').value;
+            const key = document.getElementById('accessKeyInput').value.trim();
             const btn = document.querySelector('#keyModal .btn-submit');
             if (!key) return alert('Enter a key.');
             btn.disabled = true;

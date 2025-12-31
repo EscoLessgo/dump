@@ -114,7 +114,7 @@ router.post('/request', async (req, res) => {
 
 // POST /verify - Check key
 router.post('/verify', (req, res) => {
-    const { key } = req.body;
+    const key = req.body.key?.trim();
     if (!key) return res.status(400).json({ error: 'Key required' });
 
     const row = db.prepare('SELECT * FROM access_keys WHERE key = ? AND status = ?').get(key, 'active');

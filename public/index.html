@@ -502,7 +502,6 @@
                 <button class="nav-btn prev">&larr; Prev</button>
                 <button class="nav-btn next">Next &rarr;</button>
             </div>
-            <div class="drag-proxy"></div>
         </div>
 
         <!-- Detail View Overlay -->
@@ -869,18 +868,23 @@
         function initCarousel() {
             gsap.registerPlugin(ScrollTrigger, Draggable);
 
+            // Cleanup old triggers/draggables
+            ScrollTrigger.getAll().forEach(t => t.kill());
+            Draggable.get(".cards")?.kill(); // Kill old draggable if attached to cards
+
             let iteration = 0;
 
             // Initial state
             gsap.set('.cards li', { xPercent: 400, opacity: 0, scale: 0 });
 
-            const spacing = 0.1,
+            const spacing = 0.17, // Increased spacing for better separation
                 snapTime = gsap.utils.snap(spacing),
                 cardsItems = gsap.utils.toArray('.cards li'),
+                // Animate Function: Tighter movement (250% instead of 400%) for controlled landing
                 animateFunc = element => {
                     const tl = gsap.timeline();
-                    tl.fromTo(element, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, zIndex: 100, duration: 0.5, yoyo: true, repeat: 1, ease: "power1.in", immediateRender: false })
-                        .fromTo(element, { xPercent: 400 }, { xPercent: -400, duration: 1, ease: "none", immediateRender: false }, 0);
+                    tl.fromTo(element, { scale: 0.2, opacity: 0 }, { scale: 1, opacity: 1, zIndex: 100, duration: 0.5, yoyo: true, repeat: 1, ease: "power1.in", immediateRender: false })
+                        .fromTo(element, { xPercent: 250 }, { xPercent: -250, duration: 1, ease: "none", immediateRender: false }, 0);
                     return tl;
                 },
                 seamlessLoop = buildSeamlessLoop(cardsItems, spacing, animateFunc),
@@ -891,7 +895,7 @@
                     onUpdate() {
                         seamlessLoop.time(wrapTime(playhead.offset));
                     },
-                    duration: 0.5,
+                    duration: 0.7, // Smoother scrub
                     ease: "power3",
                     paused: true
                 }),
@@ -930,27 +934,41 @@
                 trigger.scroll(scroll);
             }
 
+            // Navigation Buttons
             const nextBtn = document.querySelector(".next");
             const prevBtn = document.querySelector(".prev");
             if (nextBtn) nextBtn.replaceWith(nextBtn.cloneNode(true));
             if (prevBtn) prevBtn.replaceWith(prevBtn.cloneNode(true));
-
             document.querySelector(".next").addEventListener("click", () => scrollToOffset(scrub.vars.offset + spacing));
             document.querySelector(".prev").addEventListener("click", () => scrollToOffset(scrub.vars.offset - spacing));
 
-
-            Draggable.create(".drag-proxy", {
+            // Draggable directly on Container, proxying to virtual value
+            const proxy = document.createElement("div");
+            Draggable.create(proxy, {
                 type: "x",
-                trigger: ".cards",
+                trigger: ".cards", // Drag the container directly
+                inertia: true,
                 onPress() {
                     this.startOffset = scrub.vars.offset;
                 },
                 onDrag() {
-                    scrub.vars.offset = this.startOffset + (this.startX - this.x) * 0.001;
+                    scrub.vars.offset = this.startOffset + (this.startX - this.x) * 0.002; // Adjusted sensitivity
                     scrub.invalidate().restart();
                 },
                 onDragEnd() {
                     scrollToOffset(scrub.vars.offset);
+                },
+                onClick(e) {
+                    // Handle Click reliably
+                    const target = e.target.closest('li');
+                    if (target) {
+                        // Extract ID from onclick attribute since we can't easily access dataset here if not set
+                        const clickStr = target.getAttribute('onclick');
+                        if (clickStr && clickStr.includes('showDetail')) {
+                            const match = clickStr.match(/'([^']+)'/);
+                            if (match) showDetail(match[1]);
+                        }
+                    }
                 }
             });
         }

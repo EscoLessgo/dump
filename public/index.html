@@ -967,7 +967,7 @@
                     closeModals();
                     navigateTo('/public'); // Changed from window.location.href to SPA nav
                 } else {
-                    alert('Invalid key.');
+                    alert(data.error || 'Invalid key.');
                 }
             } catch (e) {
                 alert('Verification failed.');

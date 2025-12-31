@@ -117,12 +117,22 @@ router.post('/verify', (req, res) => {
     const key = req.body.key?.trim();
     if (!key) return res.status(400).json({ error: 'Key required' });
 
-    const row = db.prepare('SELECT * FROM access_keys WHERE key = ? AND status = ?').get(key, 'active');
+    try {
+        const row = db.prepare('SELECT * FROM access_keys WHERE key = ?').get(key);
 
-    if (row) {
+        if (!row) {
+            console.log(`Key check failed: [${key}]`);
+            return res.status(401).json({ error: 'Key not found.' });
+        }
+
+        if (row.status !== 'active') {
+            return res.status(401).json({ error: 'Key is not active.' });
+        }
+
         res.json({ success: true, key: row.key });
-    } else {
-        res.status(401).json({ error: 'Invalid or revoked key' });
+    } catch (e) {
+        console.error('Verify Error:', e);
+        res.status(500).json({ error: 'DB Error: ' + e.message });
     }
 });
 

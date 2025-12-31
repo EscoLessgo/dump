@@ -262,4 +262,12 @@ router.delete('/:id/analytics', requireAuth, (req, res) => {
     }
 });
 
+// CLEAR ALL ANALYTICS
+router.delete('/analytics/all', requireAuth, (req, res) => {
+    try {
+        db.prepare('DELETE FROM paste_views').run();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;

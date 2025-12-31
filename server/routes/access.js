@@ -237,15 +237,27 @@ router.get('/auth/discord/callback',
         }
 
         // Verification Logic
-        // Redact email, prioritize global_name (Display Name)
-        // Note: passport-discord usually puts checking into 'user.username' (which is now the unique handle)
-        // and 'user.global_name' (display name). 'discriminator' is '0' for new users.
         const displayName = user.global_name || user.username;
         const descriptor = (user.discriminator && user.discriminator !== '0') ? `#${user.discriminator}` : '';
         const handle = `@${user.username}${descriptor}`;
-
-        // Final identity format: "Display Name (@handle)"
         const identity = `${displayName} (${handle})`;
+
+        // CHECK AUTOMATION: Does this user already have a key?
+        // We can look up by discordId (user.id) or email (user.email)
+        let existingKey = null;
+        try {
+            // Check via Discord ID first
+            let keyRow = db.prepare('SELECT key FROM access_keys WHERE discordId = ? AND status = ?').get(user.id, 'active');
+
+            // If not found, check via Email
+            if (!keyRow && user.email) {
+                keyRow = db.prepare('SELECT key FROM access_keys WHERE email = ? AND status = ?').get(user.email, 'active');
+            }
+
+            if (keyRow) {
+                existingKey = keyRow.key;
+            }
+        } catch (e) { console.error("Auto-Key Check Error", e); }
 
         // Return a script to communicate with the opener
         res.send(`
@@ -260,7 +272,10 @@ router.get('/auth/discord/callback',
                                 window.opener.postMessage({
                                     type: 'DISCORD_VERIFIED',
                                     id: '${identity.replace(/'/g, "\\'")}',
-                                    verified: true
+                                    verified: true,
+                                    discordId: '${user.id}',
+                                    email: '${user.email || ""}',
+                                    existingKey: '${existingKey || ""}' 
                                 }, '*');
                                 window.close();
                             } catch(e) {

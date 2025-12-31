@@ -139,7 +139,7 @@ router.post('/generate', (req, res) => {
 
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     try {
-        db.prepare('INSERT INTO access_keys (id, key, status, created_at) VALUES (?, ?, ?, ?)').run(id, key, 'active', new Date().toISOString());
+        db.prepare('INSERT INTO access_keys (id, key, status, createdAt) VALUES (?, ?, ?, ?)').run(id, key, 'active', new Date().toISOString());
         res.json({ success: true, key });
     } catch (e) {
         console.error('Key Gen Error:', e);

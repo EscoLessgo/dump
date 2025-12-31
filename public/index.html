@@ -1018,140 +1018,64 @@
             }, 100);
         }
     </script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="/public/firebase-config.js"></script>
-
     <script>
-        let currentAccessKey = null;
+        window.submitKey = async function () {
+            const key = document.getElementById('accessKeyInput').value.trim();
+            const btn = document.querySelector('#keyModal .btn-submit');
+            if (!key) return alert('Enter a key.');
 
-        window.handleGoogleLogin = function () {
-            if (typeof firebase === 'undefined') return alert('Firebase not configured. Check console.');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            try {
+                const res = await fetch('/api/access/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('private_access_key', data.key);
+                    closeModals();
+                    navigateTo('/public');
+                } else {
+                    alert(data.error || 'Invalid key.');
+                }
+            } catch (e) {
+                alert('Verification failed.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Unlock';
+            }
+        };
 
-            const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider)
-                .then((result) => {
-                    const user = result.user;
-                    // Backend Login
-                    fetch('/api/auth/google', {
+        async function checkStoredKey() {
+            const storedKey = localStorage.getItem('private_access_key');
+            if (storedKey) {
+                try {
+                    const res = await fetch('/api/access/verify', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            uid: user.uid,
-                            email: user.email,
-                            photoURL: user.photoURL
-                        })
-                    })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                if (currentAccessKey) {
-                                    // Link Key
-                                    fetch('/api/auth/link-key', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ key: currentAccessKey })
-                                    }).finally(() => {
-                                        localStorage.setItem('private_access_key', currentAccessKey);
-                                        document.getElementById('accountModal').classList.remove('active');
-                                        navigateTo('/public');
-                                    });
-                                } else {
-                                    document.getElementById('accountModal').classList.remove('active');
-                                    navigateTo('/public');
-                                }
-                            } else {
-                                alert('Login failed');
-                            }
-                        });
-                }).catch((error) => {
-                    console.error(error);
-                    alert('Sign-In Error: ' + error.message);
-                });
-        };
+                        body: JSON.stringify({ key: storedKey })
+                    });
+                    const data = await res.json();
 
-        window.skipAccountCreation = function () {
-            if (currentAccessKey) {
-                localStorage.setItem('private_access_key', currentAccessKey);
+                    if (data.success) {
+                        console.log("✅ Auto-unlocked with stored key");
+                        const entryView = document.getElementById('view-entry');
+                        if (entryView && entryView.style.display !== 'none') {
+                            navigateTo('/public');
+                        }
+                    } else {
+                        console.warn("Stored key invalid/expired");
+                        localStorage.removeItem('private_access_key');
+                    }
+                } catch (e) {
+                    console.error("Auto-check failed", e);
+                }
             }
-            document.getElementById('accountModal').classList.remove('active');
-            navigateTo('/public');
-        };
-
-        // Handle URL Params for Discord linking
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('action') === 'link_key' && localStorage.getItem('temp_access_key')) {
-            // We returned from Discord Login
-            const key = localStorage.getItem('temp_access_key');
-            fetch('/api/auth/link-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key })
-            }).then(() => {
-                localStorage.setItem('private_access_key', key);
-                localStorage.removeItem('temp_access_key');
-                window.history.replaceState({}, '', '/public'); // Clean URL
-                navigateTo('/public');
-            });
         }
+        document.addEventListener('DOMContentLoaded', checkStoredKey);
     </script>
-    window.submitKey = async function () {
-    const key = document.getElementById('accessKeyInput').value.trim();
-    const btn = document.querySelector('#keyModal .btn-submit');
-    if (!key) return alert('Enter a key.');
-
-    btn.disabled = true;
-    btn.textContent = 'Verifying...';
-    try {
-    const res = await fetch('/api/access/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key })
-    });
-    const data = await res.json();
-    if (data.success) {
-    localStorage.setItem('private_access_key', data.key);
-    closeModals();
-    navigateTo('/public');
-    } else {
-    alert(data.error || 'Invalid key.');
-    }
-    } catch (e) {
-    alert('Verification failed.');
-    } finally {
-    btn.disabled = false;
-    btn.textContent = 'Unlock';
-    }
-    };
-
-    async function checkStoredKey() {
-    const storedKey = localStorage.getItem('private_access_key');
-    if (storedKey) {
-    try {
-    const res = await fetch('/api/access/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: storedKey })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-    console.log("✅ Auto-unlocked with stored key");
-    const entryView = document.getElementById('view-entry');
-    if (entryView && entryView.style.display !== 'none') {
-    navigateTo('/public');
-    }
-    } else {
-    console.warn("Stored key invalid/expired");
-    localStorage.removeItem('private_access_key');
-    }
-    } catch (e) {
-    console.error("Auto-check failed", e);
-    }
-    }
-    }
-    document.addEventListener('DOMContentLoaded', checkStoredKey);
 </body>
 
 </html>

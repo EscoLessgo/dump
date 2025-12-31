@@ -412,6 +412,51 @@
             padding: 5px;
             line-height: 1;
         }
+
+        .drag-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(10, 10, 12, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 24px;
+            border-radius: 50px;
+            backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            animation: hintFadeIn 1s 2s forwards;
+            transition: opacity 0.5s;
+        }
+
+        @keyframes hintFadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .hand-anim {
+            font-size: 1.5rem;
+            animation: handMove 2s infinite ease-in-out;
+        }
+
+        @keyframes handMove {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(-20px);
+            }
+        }
     </style>
 </head>
 
@@ -503,6 +548,11 @@
             <div class="actions">
                 <button class="nav-btn prev">&larr; Prev</button>
                 <button class="nav-btn next">Next &rarr;</button>
+            </div>
+
+            <div id="dragHint" class="drag-hint">
+                <div class="hand-anim">👆</div>
+                <span>Try clicking and dragging the slides for quicker viewing!</span>
             </div>
         </div>
 
@@ -951,6 +1001,8 @@
                 trigger: ".cards", // Drag the container directly
                 inertia: true,
                 onPress() {
+                    const hint = document.getElementById('dragHint');
+                    if (hint) hint.style.opacity = '0';
                     this.startOffset = scrub.vars.offset;
                 },
                 onDrag() {

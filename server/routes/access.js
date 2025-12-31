@@ -143,7 +143,7 @@ router.post('/generate', (req, res) => {
         res.json({ success: true, key });
     } catch (e) {
         console.error('Key Gen Error:', e);
-        res.status(500).json({ error: 'Failed to generate key' });
+        res.status(500).json({ error: 'Failed: ' + e.message });
     }
 });
 

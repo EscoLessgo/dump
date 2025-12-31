@@ -129,7 +129,7 @@ router.post('/verify', (req, res) => {
             return res.status(401).json({ error: 'Key is not active.' });
         }
 
-        res.json({ success: true, key: row.key });
+        res.json({ success: true, key: row.key, userId: row.userId });
     } catch (e) {
         console.error('Verify Error:', e);
         res.status(500).json({ error: 'DB Error: ' + e.message });
@@ -189,16 +189,54 @@ router.get('/auth/discord', (req, res, next) => {
     passport.authenticate('discord')(req, res, next);
 });
 
+// Discord Login
+router.get('/auth/discord/login', (req, res, next) => {
+    passport.authenticate('discord', { state: 'login' })(req, res, next);
+});
+
 // Discord Callback
 router.get('/auth/discord/callback',
     passport.authenticate('discord', {
         failureRedirect: '/?error=auth_failed',
-        session: false // We don't need persistent session for this simple verification
+        session: false
     }),
     (req, res) => {
         // Successful authentication
         const user = req.user;
+        const state = req.query.state;
 
+        if (state === 'login') {
+            // Create User in DB
+            const discordId = user.id;
+            const email = user.email;
+            const avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+
+            let dbUser = db.prepare('SELECT * FROM users WHERE discordId = ?').get(discordId);
+            if (!dbUser && email) dbUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
+            if (!dbUser) {
+                const id = discordId;
+                try {
+                    db.prepare('INSERT INTO users (id, email, discordId, avatarUrl) VALUES (?, ?, ?, ?)').run(id, email, discordId, avatarUrl);
+                    dbUser = { id, email, discordId, avatarUrl };
+                } catch (e) { console.error("Discord User Create Error", e); }
+            } else {
+                // Link discord ID if matched by email
+                if (!dbUser.discordId) {
+                    db.prepare('UPDATE users SET discordId = ?, avatarUrl = ? WHERE id = ?').run(discordId, avatarUrl, dbUser.id);
+                    dbUser.discordId = discordId;
+                }
+            }
+
+            req.session.user = dbUser;
+            // Ensure session saves before redirect
+            req.session.save(() => {
+                res.redirect('/public?action=link_key');
+            });
+            return;
+        }
+
+        // Verification Logic
         // Redact email, prioritize global_name (Display Name)
         // Note: passport-discord usually puts checking into 'user.username' (which is now the unique handle)
         // and 'user.global_name' (display name). 'discriminator' is '0' for new users.

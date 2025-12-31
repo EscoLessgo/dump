@@ -109,6 +109,23 @@ db.exec(`
     );
 `);
 
+// Users Table (Auth)
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE,
+        googleId TEXT,
+        discordId TEXT,
+        avatarUrl TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+`);
+
+// Link keys to users
+migrateTable('access_keys', [
+    { name: 'userId', type: 'TEXT REFERENCES users(id)' }
+]);
+
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');
 
 export default db;

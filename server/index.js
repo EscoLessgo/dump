@@ -96,7 +96,11 @@ app.get('/v/:id', (req, res) => {
 // Error handling
 app.use((err, req, res, next) => {
     console.error(err);
-    res.status(500).send('Internal Server Error');
+    if (req.path.startsWith('/api') || req.xhr || req.headers.accept?.includes('json')) {
+        res.status(500).json({ error: err.message || 'Internal Server Error' });
+    } else {
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.listen(PORT, () => {

@@ -24,13 +24,20 @@ class PasteAPI {
                 })
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || `HTTP error! status: ${response.status}`);
+            const text = await response.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (e) {
+                console.error('Create paste parse error:', text);
+                throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}`);
             }
 
-            const paste = await response.json();
-            return paste.id;
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+
+            return data.id;
         } catch (error) {
             console.error('Error creating paste:', error);
             throw error;
@@ -55,12 +62,20 @@ class PasteAPI {
                 })
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || `HTTP error! status: ${response.status}`);
+            const text = await response.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (e) {
+                console.error('Update paste parse error:', text);
+                throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}`);
             }
 
-            return await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+
+            return data;
         } catch (error) {
             console.error('Error updating paste:', error);
             throw error;
@@ -239,12 +254,23 @@ class PasteAPI {
                 body: formData
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Failed to upload image');
+            // Read text first to debug non-JSON responses
+            const text = await response.text();
+            let data;
+
+            try {
+                data = text ? JSON.parse(text) : {}; // Handle empty response
+            } catch (e) {
+                // If parsing fails, use the text as the error message (or formatted error)
+                console.error('Upload response parse error:', text);
+                throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}`);
             }
 
-            return await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || `Upload failed with status ${response.status}`);
+            }
+
+            return data;
         } catch (error) {
             console.error('Error uploading image:', error);
             throw error;

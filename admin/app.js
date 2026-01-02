@@ -762,7 +762,11 @@ async function handleImageUpload(e) {
         // Trigger input event to update any preview (if exists)
         pasteContent.dispatchEvent(new Event('input'));
     } catch (error) {
-        alert('Upload failed: ' + error.message);
+        if (error.message.includes('JSON.parse') || error.message.includes('non-JSON')) {
+            alert('Upload failed: The file is likely too large (Limit: 100MB on Railway). Try a smaller file.');
+        } else {
+            alert('Upload failed: ' + error.message);
+        }
     } finally {
         uploadImageBtn.childNodes[0].textContent = originalText;
         uploadImageBtn.disabled = false;

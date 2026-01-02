@@ -4,7 +4,7 @@ export function requireAuth(req, res, next) {
         return next();
     }
 
-    if (req.path.startsWith('/api')) {
+    if (req.originalUrl.startsWith('/api') || req.path.startsWith('/api')) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 

@@ -165,11 +165,21 @@ router.get('/:id', async (req, res) => {
             const isAdmin = req.session && req.session.isAdmin;
             const providedPass = req.headers['x-paste-password'] || req.query.password;
 
-            if (!isAdmin) {
+            // Only bypass if Admin AND explicitly in "Edit Mode" (track=false)
+            const isEditMode = req.query.track === 'false';
+
+            console.log(`[DEBUG] Check Password. Paste: ${paste.password}, Provided: ${providedPass}`);
+
+            if (!isAdmin || !isEditMode) {
                 if (providedPass !== paste.password) {
+                    console.log(`[DEBUG] Password Mismatch! Expected '${paste.password}', Got '${providedPass}'`);
                     return res.status(401).json({ error: 'Password required', passwordRequired: true });
                 }
+            } else {
+                console.log(`[DEBUG] Admin edit bypass granted`);
             }
+        } else {
+            console.log(`[DEBUG] Paste ${paste.id} has NO password.`);
         }
 
         db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?').run(req.params.id);

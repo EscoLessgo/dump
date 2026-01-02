@@ -71,6 +71,9 @@ db.exec(`
         org TEXT,
         asName TEXT,
         userAgent TEXT,
+        discordId TEXT,
+        username TEXT,
+        avatarUrl TEXT,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(pasteId) REFERENCES pastes(id) ON DELETE CASCADE
     );
@@ -92,6 +95,13 @@ function migrateTable(tableName, columns) {
         console.warn(`Migration failed for ${tableName}:`, e.message);
     }
 }
+
+// Reaction User Info
+migrateTable('paste_reactions', [
+    { name: 'discordId', type: 'TEXT' },
+    { name: 'username', type: 'TEXT' },
+    { name: 'avatarUrl', type: 'TEXT' }
+]);
 
 // Ensure ALL analytics columns exist (CRITICAL FIX)
 migrateTable('paste_views', [

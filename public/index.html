@@ -1267,6 +1267,25 @@
                         countEl.textContent = Math.max(0, current - 1);
                         btn.classList.remove('active');
                     }
+                } else if (data.authRequired) {
+                    // Not logged in -> Prompt Discord Login
+                    alert("You must log in with Discord to react/vote.");
+
+                    // Reset modal state to just show Discord button and "Login" title
+                    closeModals();
+                    resetRequestModal();
+
+                    // Small hack to re-purpose the Request Modal for just Login
+                    const title = document.querySelector('#req-view-1 h2');
+                    if (title) title.textContent = "Login Required";
+                    const subtitle = document.querySelector('#req-view-1 p');
+                    if (subtitle) subtitle.textContent = "Please log in with Discord to continue.";
+
+                    // Hide Manual button if we only want Discord for reactions
+                    const manualBtn = document.querySelector('.auth-manual');
+                    if (manualBtn) manualBtn.style.display = 'none';
+
+                    document.getElementById('requestModal').classList.add('active');
                 }
             } catch (e) {
                 console.error("Reaction failed", e);

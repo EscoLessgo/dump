@@ -211,6 +211,11 @@ router.get('/:id', async (req, res) => {
 // React to Paste
 router.post('/:id/react', async (req, res) => {
     try {
+        // FORCE LOGIN: Users must be logged in via Discord to react
+        if (!req.session || !req.session.user) {
+            return res.status(401).json({ error: 'Auth Required', authRequired: true });
+        }
+
         const { id } = req.params;
         const { type } = req.body;
         const VALID_TYPES = ['heart', 'star', 'like'];
@@ -219,9 +224,11 @@ router.post('/:id/react', async (req, res) => {
 
         const ip = getClientIP(req);
         const userAgent = req.headers['user-agent'] || '';
+        const user = req.session.user;
 
-        // Check for existing reaction (Toggle logic: Remove if exists)
-        const existing = db.prepare('SELECT id FROM paste_reactions WHERE pasteId = ? AND ip = ? AND type = ?').get(id, ip, type);
+        // Check for existing reaction (Toggle) - Bind to User ID if possible, else IP (but we force login now)
+        // We'll trust the User ID first
+        let existing = db.prepare('SELECT id FROM paste_reactions WHERE pasteId = ? AND discordId = ? AND type = ?').get(id, user.discordId, type);
 
         if (existing) {
             db.prepare('DELETE FROM paste_reactions WHERE id = ?').run(existing.id);
@@ -229,17 +236,21 @@ router.post('/:id/react', async (req, res) => {
         } else {
             // Fetch Geo for Analytics
             const loc = await fetchGeolocation(ip);
-            if (loc) {
-                db.prepare(`
-                    INSERT INTO paste_reactions (pasteId, type, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).run(
-                    id, type, ip, loc.country, loc.countryCode, loc.region, loc.regionName,
-                    loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, userAgent
-                );
-            } else {
-                db.prepare(`INSERT INTO paste_reactions (pasteId, type, ip, userAgent) VALUES (?, ?, ?, ?)`).run(id, type, ip, userAgent);
-            }
+
+            // Prepare Insert
+            const cols = `pasteId, type, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent, discordId, username, avatarUrl`;
+            const vals = `?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?`;
+
+            const geo = loc || {};
+
+            db.prepare(`INSERT INTO paste_reactions (${cols}) VALUES (${vals})`).run(
+                id, type, ip,
+                geo.country || null, geo.countryCode || null, geo.region || null, geo.regionName || null,
+                geo.city || null, geo.zip || null, geo.lat || null, geo.lon || null, geo.isp || null, geo.org || null, geo.as || null,
+                userAgent,
+                user.discordId, user.email || user.username || 'User', user.avatarUrl
+            );
+
             res.json({ success: true, action: 'added' });
         }
 
@@ -295,7 +306,13 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
             if (ua.includes('Edg/')) return 'Edge';
             return 'Other';
         }).slice(0, 5),
-        recentViews: views.slice(0, 50)
+        recentViews: views.slice(0, 50),
+        recentReactions: db.prepare('SELECT * FROM paste_reactions WHERE pasteId = ? ORDER BY createdAt DESC LIMIT 50').all(id),
+        reactions: {
+            heart: paste.reactions?.heart || 0, // Using DB aggregate if available, or just recalculate
+            star: paste.reactions?.star || 0,
+            like: paste.reactions?.like || 0
+        }
     });
 });
 

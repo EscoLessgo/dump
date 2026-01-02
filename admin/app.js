@@ -446,7 +446,56 @@ async function showAnalytics(pasteId) {
                                 </td>
                             </tr>
                         `).join('')}
-                        ${(!analytics.recentViews || analytics.recentViews.length === 0) ? '<tr><td colspan="5" style="padding: 20px; text-align: center">No view data available yet.</td></tr>' : ''}
+                ${!analytics.recentViews || analytics.recentViews.length === 0 ? '<tr><td colspan="5" style="padding: 20px; text-align: center">No view data available yet.</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reactions Section -->
+            <h4 style="font-size: 1.2rem; margin: 32px 0 16px 0; color: #ff006e; border-top: 1px solid var(--border); padding-top: 24px;">❤️ Reactions</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                <div class="stat-card" style="border-color: #ff006e22">
+                    <div class="stat-value" style="color: #ff006e">${analytics.reactions?.heart || 0}</div>
+                    <div class="stat-label">Hearts</div>
+                </div>
+                <div class="stat-card" style="border-color: #ffd70022">
+                    <div class="stat-value" style="color: #ffd700">${analytics.reactions?.star || 0}</div>
+                    <div class="stat-label">Stars</div>
+                </div>
+                <div class="stat-card" style="border-color: #00f5ff22">
+                    <div class="stat-value" style="color: #00f5ff">${analytics.reactions?.like || 0}</div>
+                    <div class="stat-label">Likes</div>
+                </div>
+            </div>
+
+            <div class="views-table" style="overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--border)">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05)">
+                            <th style="padding: 12px; text-align: left;">User</th>
+                            <th style="padding: 12px; text-align: left;">Type</th>
+                            <th style="padding: 12px; text-align: left;">Location</th>
+                            <th style="padding: 12px; text-align: left;">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${(analytics.recentReactions || []).map(r => `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05)">
+                                <td style="padding: 12px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <img src="${r.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'}" style="width:20px; height:20px; border-radius:50%">
+                                        <span>${escapeHtml(r.username || 'Anon')}</span>
+                                    </div>
+                                    <small style="color:#666; font-family:monospace">${r.discordId || r.ip}</small>
+                                </td>
+                                <td style="padding: 12px; font-size:1.2rem;">${r.type === 'heart' ? '❤️' : r.type === 'star' ? '⭐' : '👍'}</td>
+                                <td style="padding: 12px;">
+                                    ${getFlagEmoji(r.countryCode)} ${escapeHtml(r.city || 'Unknown')}<br>
+                                    <small style="color:#666">${r.isp || ''}</small>
+                                </td>
+                                <td style="padding: 12px;">${formatDateTime(r.createdAt)}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             </div>

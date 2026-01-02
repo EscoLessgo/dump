@@ -129,6 +129,22 @@ router.post('/verify', (req, res) => {
             return res.status(401).json({ error: 'Key is not active.' });
         }
 
+        // Check Claim Status (Enhanced Security)
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
+
+        if (row.claimedIp && row.claimedIp !== ip) {
+            console.warn(`⚠️ Access Denied: Key [${key}] is bound to IP ${row.claimedIp}, but accessed from ${ip}`);
+            return res.status(403).json({ error: 'This access key is bound to another device/network.' });
+        }
+
+        if (!row.claimedIp) {
+            console.log(`🔐 Key Claimed: [${key}] matches to IP ${ip}`);
+            db.prepare('UPDATE access_keys SET claimedIp = ? WHERE key = ?').run(ip, key);
+        }
+
+        // Log usage
+        db.prepare('UPDATE access_keys SET lastUsedAt = ? WHERE key = ?').run(new Date().toISOString(), key);
+
         res.json({ success: true, key: row.key, userId: row.userId });
     } catch (e) {
         console.error('Verify Error:', e);

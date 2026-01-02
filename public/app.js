@@ -198,10 +198,11 @@ function displayPaste(paste) {
 
     // Syntax highlighting or Markdown rendering
     // Syntax highlighting or Markdown rendering
-    // Auto-detect markdown images even in plaintext
+    // Auto-detect markdown images or HTML video tags even in plaintext
     const hasImage = /!\[.*?\]\(.*?\)/.test(paste.content);
+    const hasVideo = /<video.*?src=["'].*?["'].*?>/.test(paste.content);
 
-    if (paste.language === 'markdown' || (paste.language === 'plaintext' && hasImage)) {
+    if (paste.language === 'markdown' || (paste.language === 'plaintext' && (hasImage || hasVideo))) {
         pasteContent.innerHTML = marked.parse(paste.content);
         pasteContent.classList.add('markdown-body');
         // Apply syntax highlighting to code blocks within markdown
@@ -377,7 +378,7 @@ style.textContent = `
         padding-right: 12px;
     }
 
-    .markdown-body img {
+    .markdown-body img, .markdown-body video {
         max-width: 100%;
         height: auto;
         border-radius: 8px;

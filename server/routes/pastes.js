@@ -194,7 +194,55 @@ router.get('/:id', async (req, res) => {
             db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
         });
 
+        // Fetch Reactions
+        const reactions = db.prepare('SELECT type, COUNT(*) as count FROM paste_reactions WHERE pasteId = ? GROUP BY type').all(req.params.id);
+        const reactionCounts = { heart: 0, star: 0, like: 0 };
+        reactions.forEach(r => {
+            if (reactionCounts[r.type] !== undefined) reactionCounts[r.type] = r.count;
+        });
+        paste.reactions = reactionCounts;
+
         res.json(paste);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// React to Paste
+router.post('/:id/react', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type } = req.body;
+        const VALID_TYPES = ['heart', 'star', 'like'];
+
+        if (!VALID_TYPES.includes(type)) return res.status(400).json({ error: 'Invalid reaction type' });
+
+        const ip = getClientIP(req);
+        const userAgent = req.headers['user-agent'] || '';
+
+        // Check for existing reaction (Toggle logic: Remove if exists)
+        const existing = db.prepare('SELECT id FROM paste_reactions WHERE pasteId = ? AND ip = ? AND type = ?').get(id, ip, type);
+
+        if (existing) {
+            db.prepare('DELETE FROM paste_reactions WHERE id = ?').run(existing.id);
+            res.json({ success: true, action: 'removed' });
+        } else {
+            // Fetch Geo for Analytics
+            const loc = await fetchGeolocation(ip);
+            if (loc) {
+                db.prepare(`
+                    INSERT INTO paste_reactions (pasteId, type, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(
+                    id, type, ip, loc.country, loc.countryCode, loc.region, loc.regionName,
+                    loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, userAgent
+                );
+            } else {
+                db.prepare(`INSERT INTO paste_reactions (pasteId, type, ip, userAgent) VALUES (?, ?, ?, ?)`).run(id, type, ip, userAgent);
+            }
+            res.json({ success: true, action: 'added' });
+        }
+
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

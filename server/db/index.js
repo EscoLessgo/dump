@@ -53,6 +53,27 @@ db.exec(`
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(pasteId) REFERENCES pastes(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS paste_reactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pasteId TEXT,
+        type TEXT,
+        ip TEXT,
+        country TEXT,
+        countryCode TEXT,
+        region TEXT,
+        regionName TEXT,
+        city TEXT,
+        zip TEXT,
+        lat REAL,
+        lon REAL,
+        isp TEXT,
+        org TEXT,
+        asName TEXT,
+        userAgent TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(pasteId) REFERENCES pastes(id) ON DELETE CASCADE
+    );
 `);
 
 // Migration Helper
@@ -123,7 +144,9 @@ db.exec(`
 
 // Link keys to users
 migrateTable('access_keys', [
-    { name: 'userId', type: 'TEXT' }
+    { name: 'userId', type: 'TEXT' },
+    { name: 'claimedIp', type: 'TEXT' },
+    { name: 'lastUsedAt', type: 'DATETIME' }
 ]);
 
 console.log('✅ SQLite Database Migrations Complete (All columns verified)');

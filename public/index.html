@@ -457,6 +457,37 @@
                 transform: translateX(-20px);
             }
         }
+
+        .reactions-container {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            /* Push to right */
+        }
+
+        .reaction-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .reaction-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .reaction-btn.active {
+            border-color: #00f5ff;
+            background: rgba(0, 245, 255, 0.1);
+        }
     </style>
 </head>
 
@@ -643,6 +674,17 @@
                                     <span class="meta-item" id="pasteViews">0 views</span>
                                     <span class="meta-item" id="pasteDate">Just now</span>
                                 </div>
+                            </div>
+                            <div class="reactions-container">
+                                <button class="reaction-btn" data-type="like" onclick="toggleReaction('like')">
+                                    <span class="emoji">👍</span> <span class="count" id="count-like">0</span>
+                                </button>
+                                <button class="reaction-btn" data-type="heart" onclick="toggleReaction('heart')">
+                                    <span class="emoji">❤️</span> <span class="count" id="count-heart">0</span>
+                                </button>
+                                <button class="reaction-btn" data-type="star" onclick="toggleReaction('star')">
+                                    <span class="emoji">⭐</span> <span class="count" id="count-star">0</span>
+                                </button>
                             </div>
                         </div>
                         <div class="code-container">
@@ -1180,6 +1222,55 @@
                 hljs.highlightElement(pasteContent);
             }
             window.currentViewedPaste = paste;
+
+            // Reactions
+            if (paste.reactions) {
+                document.getElementById('count-like').textContent = paste.reactions.like || 0;
+                document.getElementById('count-heart').textContent = paste.reactions.heart || 0;
+                document.getElementById('count-star').textContent = paste.reactions.star || 0;
+            }
+
+            // Cleanup active states (simple reset for now)
+            document.querySelectorAll('.reaction-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        window.toggleReaction = async function (type) {
+            if (!window.currentViewedPaste) return;
+            const btn = document.querySelector(`.reaction-btn[data-type="${type}"]`);
+            if (!btn) return;
+
+            // Optimistic Update
+            const countEl = btn.querySelector('.count');
+            let current = parseInt(countEl.textContent) || 0;
+            const wasActive = btn.classList.contains('active');
+
+            // Toggle visual state immediately
+            if (wasActive) {
+                // Not supported visually yet without tracking 'my' reactions perfectly, 
+                // but for now we assume they can just click.
+                // Actually, let's just animate.
+            }
+
+            try {
+                const res = await fetch(`/api/pastes/${window.currentViewedPaste.id}/react`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.action === 'added') {
+                        countEl.textContent = current + 1;
+                        btn.classList.add('active');
+                    } else if (data.action === 'removed') {
+                        countEl.textContent = Math.max(0, current - 1);
+                        btn.classList.remove('active');
+                    }
+                }
+            } catch (e) {
+                console.error("Reaction failed", e);
+            }
         }
 
         // Viewer Buttons

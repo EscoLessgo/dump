@@ -682,7 +682,12 @@ async function handleImageUpload(e) {
         const result = await storage.uploadImage(file);
 
         // Insert Markdown/HTML into content
-        const markdown = `![${file.name}](${window.location.origin}${result.url})`;
+        let markdown;
+        if (file.type.startsWith('video/')) {
+            markdown = `<video controls width="100%" src="${window.location.origin}${result.url}"></video>`;
+        } else {
+            markdown = `![${file.name}](${window.location.origin}${result.url})`;
+        }
         const start = pasteContent.selectionStart;
         const end = pasteContent.selectionEnd;
         const text = pasteContent.value;

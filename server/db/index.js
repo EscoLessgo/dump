@@ -100,7 +100,8 @@ function migrateTable(tableName, columns) {
 migrateTable('paste_reactions', [
     { name: 'discordId', type: 'TEXT' },
     { name: 'username', type: 'TEXT' },
-    { name: 'avatarUrl', type: 'TEXT' }
+    { name: 'avatarUrl', type: 'TEXT' },
+    { name: 'hostname', type: 'TEXT' }
 ]);
 
 // Ensure ALL analytics columns exist (CRITICAL FIX)
@@ -116,7 +117,8 @@ migrateTable('paste_views', [
     { name: 'isp', type: 'TEXT' },
     { name: 'org', type: 'TEXT' },
     { name: 'asName', type: 'TEXT' },
-    { name: 'userAgent', type: 'TEXT' }
+    { name: 'userAgent', type: 'TEXT' },
+    { name: 'hostname', type: 'TEXT' }
 ]);
 
 // Ensure all paste columns exist

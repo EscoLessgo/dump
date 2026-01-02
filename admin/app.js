@@ -424,29 +424,43 @@ async function showAnalytics(pasteId) {
                     <thead>
                         <tr style="background: rgba(255,255,255,0.05)">
                             <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Timestamp</th>
-                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">IP Address</th>
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Identity</th>
                             <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Location</th>
-                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Zip</th>
-                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">ISP / Network</th>
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary)">Device / Network</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${(analytics.recentViews || []).map(view => `
+                        ${(analytics.recentViews || []).map(view => {
+            let platform = 'Unknown Device';
+            const ua = view.userAgent || '';
+            if (ua.includes('Windows')) platform = 'Windows PC';
+            else if (ua.includes('Macintosh')) platform = 'Mac';
+            else if (ua.includes('iPhone')) platform = 'iPhone';
+            else if (ua.includes('iPad')) platform = 'iPad';
+            else if (ua.includes('Android')) platform = 'Android';
+            else if (ua.includes('Linux')) platform = 'Linux';
+
+            if (ua.includes('Chrome/')) platform += ' (Chrome)';
+            else if (ua.includes('Firefox/')) platform += ' (Firefox)';
+            else if (ua.includes('Safari/')) platform += ' (Safari)';
+
+            return `
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05)">
                                 <td style="padding: 12px; white-space: nowrap">${formatDateTime(view.timestamp)}</td>
-                                <td style="padding: 12px; font-family: var(--font-mono)">${view.ip}</td>
-                                <td style="padding: 12px">
-                                    ${getFlagEmoji(view.countryCode)} ${escapeHtml(view.city)}, ${escapeHtml(view.regionName)}<br>
-                                    <small style="color: var(--text-tertiary)">${escapeHtml(view.country)} (${view.lat}, ${view.lon})</small>
+                                <td style="padding: 12px;">
+                                    <div style="font-family: var(--font-mono)">${view.ip}</div>
+                                    ${view.hostname ? `<small style="color: #00f5ff; font-family: monospace; display:block; margin-top:2px;">${escapeHtml(view.hostname)}</small>` : ''}
                                 </td>
-                                <td style="padding: 12px">${view.zip || '-'}</td>
                                 <td style="padding: 12px">
-                                    <span style="color: var(--secondary-start)">${escapeHtml(view.isp)}</span><br>
-                                    <small style="color: var(--text-tertiary)">${escapeHtml(view.org || view.asName || '')}</small>
+                                    ${getFlagEmoji(view.countryCode)} ${escapeHtml(view.city)}, ${escapeHtml(view.region || view.regionName || '')}
+                                </td>
+                                <td style="padding: 12px">
+                                    <div style="font-weight: 500">${platform}</div>
+                                    <small style="color: var(--text-tertiary)">${escapeHtml(view.isp || view.org || 'Unknown ISP')}</small>
                                 </td>
                             </tr>
-                        `).join('')}
-                ${!analytics.recentViews || analytics.recentViews.length === 0 ? '<tr><td colspan="5" style="padding: 20px; text-align: center">No view data available yet.</td></tr>' : ''}
+                        `}).join('')}
+                ${!analytics.recentViews || analytics.recentViews.length === 0 ? '<tr><td colspan="4" style="padding: 20px; text-align: center">No view data available yet.</td></tr>' : ''}
                     </tbody>
                 </table>
             </div>

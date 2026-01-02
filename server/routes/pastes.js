@@ -180,18 +180,21 @@ router.get('/:id', async (req, res) => {
 
         fetchGeolocation(ip).then(loc => {
             if (loc) {
-                db.prepare(`
+                const res2 = db.prepare(`
                     INSERT INTO paste_views (pasteId, ip, country, countryCode, region, regionName, city, zip, lat, lon, isp, org, asName, userAgent)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).run(
                     req.params.id, ip, loc.country, loc.countryCode, loc.region, loc.regionName,
                     loc.city, loc.zip, loc.lat, loc.lon, loc.isp, loc.org, loc.as, userAgent
                 );
+                updateHostname('paste_views', res2.lastInsertRowid, ip);
             } else {
-                db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
+                const res2 = db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
+                updateHostname('paste_views', res2.lastInsertRowid, ip);
             }
         }).catch(() => {
-            db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
+            const res2 = db.prepare(`INSERT INTO paste_views (pasteId, ip, userAgent) VALUES (?, ?, ?)`).run(req.params.id, ip, userAgent);
+            updateHostname('paste_views', res2.lastInsertRowid, ip);
         });
 
         // Fetch Reactions
@@ -243,13 +246,16 @@ router.post('/:id/react', async (req, res) => {
 
             const geo = loc || {};
 
-            db.prepare(`INSERT INTO paste_reactions (${cols}) VALUES (${vals})`).run(
+            const result = db.prepare(`INSERT INTO paste_reactions (${cols}) VALUES (${vals})`).run(
                 id, type, ip,
                 geo.country || null, geo.countryCode || null, geo.region || null, geo.regionName || null,
                 geo.city || null, geo.zip || null, geo.lat || null, geo.lon || null, geo.isp || null, geo.org || null, geo.as || null,
                 userAgent,
                 user.discordId, user.email || user.username || 'User', user.avatarUrl
             );
+
+            // Async Reverse DNS
+            updateHostname('paste_reactions', result.lastInsertRowid, ip);
 
             res.json({ success: true, action: 'added' });
         }
@@ -258,6 +264,20 @@ router.post('/:id/react', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+// Helper for Async DNS Update
+async function updateHostname(table, id, ip) {
+    if (ip === '127.0.0.1' || ip.includes(':')) return;
+    try {
+        const { promises: dns } = await import('dns');
+        const hostnames = await dns.reverse(ip);
+        if (hostnames && hostnames.length > 0) {
+            db.prepare(`UPDATE ${table} SET hostname = ? WHERE id = ?`).run(hostnames[0], id);
+        }
+    } catch (e) {
+        // limit noise
+    }
+}
 
 // ADMIN LIST
 router.get('/', requireAuth, (req, res) => {

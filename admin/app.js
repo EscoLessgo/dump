@@ -812,7 +812,7 @@ async function loadKeys() {
                 <div style="overflow: hidden; text-overflow: ellipsis; flex: 1;">
                     <div style="color: #fff; font-family: monospace;">${k.key}</div>
                     <div style="color: #666; font-size: 0.75rem;">
-                        ${k.userEmail ? k.userEmail : (k.userId || 'Unclaimed')} • ${new Date(k.createdAt).toLocaleDateString()}
+                        ${k.userEmail ? k.userEmail : (k.userId || (k.claimedIp ? `Claimed (${k.claimedIp})` : 'Unclaimed'))} • ${new Date(k.createdAt).toLocaleDateString()}
                     </div>
                 </div>
                 <button onclick="deleteKey('${k.id}')" class="btn-icon" style="color: #ff0050; opacity: 0.7;" title="Revoke">

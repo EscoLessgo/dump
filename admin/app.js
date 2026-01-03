@@ -183,7 +183,7 @@ async function createPaste() {
         burnAfterRead: burnAfterRead.checked,
         expiresAt: calculateExpiration(pasteExpiration.value),
         folderId: pasteFolder.value || null,
-        password: pastePassword.value || null
+        password: pastePassword.value ? pastePassword.value.trim() : null
     };
 
     try {

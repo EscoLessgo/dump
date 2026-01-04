@@ -28,204 +28,142 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/public/motion-blur.js"></script>
     <style>
-        /* Viewer Video Background */
-        #viewer-bg-video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -1;
-            /* Behind content but above global bg */
-            opacity: 0;
-            transition: opacity 1s ease;
-            pointer-events: none;
-        }
-
-        #viewer-bg-video.active {
-            opacity: 1;
-        }
-
-        /* Redesigned Gallery (Vertical List) */
+        /* Carousel CSS */
         .gallery {
-            position: relative;
-            /* Changed from absolute to flow */
+            position: absolute;
             width: 100%;
-            min-height: 100vh;
-            overflow-y: auto;
-            /* Allow vertical scrolling */
-            padding-top: 100px;
-            /* Header space */
-            padding-bottom: 100px;
-            background: transparent;
-            /* Let video show */
-            perspective: 1000px;
+            height: 100vh;
+            overflow: hidden;
+            background: #050505;
         }
 
         .cards {
-            position: relative;
-            /* Reset */
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-            height: auto;
-            /* Grow with content */
-            top: auto;
-            left: auto;
-            transform: none;
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-            /* Space between cards */
-            padding: 0 20px;
-            box-sizing: border-box;
+            position: absolute;
+            width: 20rem;
+            height: 28rem;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            perspective: 1000px;
+            pointer-events: none;
+            /* Let clicks pass to items? No, items need events */
         }
 
-        /* Premium Lit Cards */
         .cards li {
-            position: relative;
-            top: auto;
-            left: auto;
-            width: 100%;
-            height: 250px;
-            margin: 0;
-            list-style: none;
-            border-radius: 12px;
-
-            /* Glassmorphism Premium */
-            background: linear-gradient(90deg, rgba(10, 10, 15, 0.85) 0%, rgba(20, 20, 25, 0.7) 100%);
-            backdrop-filter: blur(20px);
-
-            /* Default Lit Border */
-            border: 1px solid rgba(0, 245, 255, 0.3);
-            box-shadow:
-                0 0 15px rgba(0, 245, 255, 0.1),
-                inset 0 0 30px rgba(0, 245, 255, 0.05);
-
-            display: flex;
-            flex-direction: row;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            transform-style: preserve-3d;
-            z-index: 1;
+            pointer-events: auto;
         }
 
-        /* Inner Glow Bar */
-        .cards li::after {
-            content: '';
+        .cards li {
+            list-style: none;
+            padding: 2rem;
+            margin: 0;
+            width: 20rem;
+            height: 28rem;
+            text-align: left;
             position: absolute;
             top: 0;
             left: 0;
-            width: 6px;
-            height: 100%;
-            background: #00f5ff;
-            box-shadow: 0 0 20px #00f5ff;
-            opacity: 0.7;
-            transition: all 0.3s;
-            z-index: 2;
+            border-radius: 1rem;
+            /* Image with Dark Gradient Overlay */
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.95) 100%), url('/public/card-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .cards li.private-card {
+            /* Distinct Private Style */
+            background: linear-gradient(160deg, rgba(40, 10, 20, 0.95) 0%, rgba(10, 5, 5, 0.98) 100%);
+            border: 1px solid rgba(255, 0, 110, 0.5);
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.25), inset 0 0 20px rgba(255, 0, 110, 0.05);
         }
 
         .cards li:hover {
-            transform: scale(1.02) translateX(10px);
-            border-color: #00f5ff;
-            box-shadow:
-                0 10px 40px rgba(0, 245, 255, 0.25),
-                inset 0 0 20px rgba(0, 245, 255, 0.1),
-                0 0 5px rgba(255, 255, 255, 0.5);
-            z-index: 10;
-        }
-
-        .cards li:hover::after {
-            width: 8px;
-            opacity: 1;
-            box-shadow: 0 0 30px #00f5ff, 0 0 10px #fff;
-        }
-
-        /* Private Card Variation */
-        .cards li.private-card {
-            border-color: rgba(255, 0, 110, 0.3);
-            box-shadow:
-                0 0 15px rgba(255, 0, 110, 0.1),
-                inset 0 0 30px rgba(255, 0, 110, 0.05);
-            background: linear-gradient(90deg, rgba(25, 10, 15, 0.85) 0%, rgba(20, 10, 10, 0.7) 100%);
-        }
-
-        .cards li.private-card::after {
-            background: #ff006e;
-            box-shadow: 0 0 20px #ff006e;
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
         }
 
         .cards li.private-card:hover {
-            border-color: #ff006e;
-            box-shadow:
-                0 10px 40px rgba(255, 0, 110, 0.35),
-                inset 0 0 20px rgba(255, 0, 110, 0.1),
-                0 0 5px rgba(255, 255, 255, 0.5);
-        }
-
-        .card-content {
-            flex: 1;
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            z-index: 3;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            border-color: rgba(255, 0, 110, 0.8);
+            box-shadow: 0 0 40px rgba(255, 0, 110, 0.4);
         }
 
         .cards li h3 {
-            font-size: 2rem;
-            margin: 0 0 0.5rem 0;
-            color: #fff;
-            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+            font-size: 1.5rem;
+            margin: 0 0 1rem 0;
+            color: #00f5ff;
+            font-weight: 700;
+            text-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
         }
 
         .cards li.private-card h3 {
-            text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+            color: #ff006e;
+            text-shadow: 0 0 15px rgba(255, 0, 110, 0.3);
         }
 
         .card-meta {
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
             color: #888;
-            font-size: 0.9rem;
-            display: flex;
-            gap: 15px;
             margin-bottom: 1rem;
+            display: flex;
+            gap: 10px;
         }
 
-        .card-preview-text {
+        .card-preview {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
             color: #ccc;
-            font-size: 1rem;
-            line-height: 1.5;
-            display: -webkit-box;
-            line-clamp: 3;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
             opacity: 0.8;
-            max-width: 80%;
-        }
-
-        /* Decorative "Tech" elements on card */
-        .cards li::before {
-            display: none;
-            /* Removed */
+            overflow: hidden;
+            white-space: pre-wrap;
+            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            pointer-events: none;
         }
 
         .actions {
-            display: none;
-            /* Hide carousel actions */
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            z-index: 100;
         }
 
-        .drag-hint {
-            display: none;
-            /* Hide drag hint */
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
         }
 
         .drag-proxy {
-            display: none;
+            visibility: hidden;
+            position: absolute;
         }
 
         /* Shared Styles from Viewer */
@@ -260,8 +198,6 @@
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 15;
-            /* Ensure above background and below loader */
         }
 
         /* ... original styles ... */
@@ -565,8 +501,7 @@
     </div>
 
     <!-- Motion Blur -->
-    <!-- Motion Blur -->
-    <div id="motion-blur-container" style="pointer-events: none;"></div>
+    <div id="motion-blur-container"></div>
 
     <!-- Audio -->
     <audio id="bgAudio" loop preload="auto">
@@ -602,12 +537,8 @@
     <!-- Background Media -->
     <div id="video-background-container"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; background: #000;">
-        <!-- Entry BG -->
-        <video id="viewer-entry-bg" autoplay muted loop playsinline class="viewer-bg active">
-            <source src="/public/uploads/rocky-shore-coast.mp4" type="video/mp4">
-        </video>
     </div>
-
+    <script src="/public/video-slideshow.js"></script>
 
     <!-- View: ENTRY -->
     <div id="view-entry">
@@ -663,13 +594,15 @@
                 }
             </style>
 
-            <div class="button-container">
+            <div class="button-container" style="position: relative; z-index: 2147483647;">
                 <a href="/public" id="btnPublicAccess" class="entry-btn btn-public"
-                    onclick="console.log('Public Clicked'); event.preventDefault(); navigateTo('/public');">
+                    onclick="console.log('Public Clicked'); event.preventDefault(); navigateTo('/public');"
+                    style="pointer-events: auto; display: inline-block; text-decoration: none; text-align: center; cursor: pointer; position: relative; z-index: 2147483647;">
                     Public Access
                 </a>
                 <a href="#" id="btnPrivateAccess" class="entry-btn btn-private"
-                    onclick="console.log('Private Clicked'); openKeyModal(); return false;">
+                    onclick="console.log('Private Clicked'); openKeyModal(); return false;"
+                    style="pointer-events: auto; display: inline-block; text-decoration: none; text-align: center; cursor: pointer; position: relative; z-index: 2147483647;">
                     Private Access
                     <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 0.5rem;">Access Key Required</div>
                 </a>
@@ -689,37 +622,10 @@
         </div>
     </div>
 
-    <!-- View: VIEWER -->
+    <!-- View: VIEWER (Merged) -->
+    <!-- View: VIEWER (Carousel) -->
     <div id="view-viewer"
-        style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 20; background: transparent;">
-
-        <!-- Viewer BG (List) -->
-        <video id="viewer-list-bg" autoplay muted loop playsinline class="viewer-bg active">
-            <source src="/public/uploads/list-bg.mp4" type="video/mp4">
-        </video>
-        <!-- Viewer BG (Detail) -->
-        <video id="viewer-detail-bg" autoplay muted loop playsinline class="viewer-bg">
-            <source src="/public/uploads/detail-bg.mp4" type="video/mp4">
-        </video>
-
-        <style>
-            .viewer-bg {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                z-index: -1;
-                opacity: 0;
-                transition: opacity 1.5s ease;
-                pointer-events: none;
-            }
-
-            .viewer-bg.active {
-                opacity: 1;
-            }
-        </style>
+        style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 20; background: #050505;">
 
         <!-- Gallery List -->
         <div id="listView" class="gallery">
@@ -727,6 +633,11 @@
             <div class="actions">
                 <button class="nav-btn prev">&larr; Prev</button>
                 <button class="nav-btn next">Next &rarr;</button>
+            </div>
+
+            <div id="dragHint" class="drag-hint">
+                <div class="hand-anim">👆</div>
+                <span>Try clicking and dragging the slides for quicker viewing!</span>
             </div>
         </div>
 
@@ -1017,12 +928,10 @@
 
         function handleRoute() {
             const path = window.location.pathname;
-            const listBg = document.getElementById('viewer-list-bg');
-            const detailBg = document.getElementById('viewer-detail-bg');
-            const entryBg = document.getElementById('viewer-entry-bg');
 
+            // Ensure audio is trying to play on route change (interaction happened)
             if (audio.paused && hasInteracted) {
-                audio.play().catch(console.error);
+                audio.play().catch(e => console.log('Resume play failed', e));
                 updateAudioIcon();
             }
 
@@ -1031,27 +940,18 @@
                 document.getElementById('view-entry').style.display = 'flex';
                 document.getElementById('view-viewer').style.display = 'none';
                 document.body.style.overflow = 'hidden'; // Lock scroll on entry
-
-                if (listBg) listBg.classList.remove('active');
-                if (detailBg) detailBg.classList.remove('active');
-                if (entryBg) entryBg.classList.add('active');
             }
             // Public Viewer
             else if (path.startsWith('/public') || path.startsWith('/v/')) {
                 document.getElementById('view-entry').style.display = 'none';
                 document.getElementById('view-viewer').style.display = 'block';
                 document.body.style.overflow = 'auto'; // Allow scroll
-                if (entryBg) entryBg.classList.remove('active');
 
                 if (path.startsWith('/v/')) {
                     const id = path.split('/')[2];
                     showDetail(id);
-                    if (listBg) listBg.classList.remove('active');
-                    if (detailBg) detailBg.classList.add('active');
                 } else {
                     showList();
-                    if (listBg) listBg.classList.add('active');
-                    if (detailBg) detailBg.classList.remove('active');
                 }
             }
         }
@@ -1095,10 +995,7 @@
                 }
 
                 if (pastes.length === 0) {
-                    cardsContainer.innerHTML = `<li
-                    style = "display:flex; justify-content:center; align-items:center; background:none; border:none; box-shadow:none;" >
-                        <h3>No Pastes Found</h3>
-        </li > `;
+                    cardsContainer.innerHTML = '<li style="display:flex; justify-content:center; align-items:center; background:none; border:none; box-shadow:none;"><h3>No Pastes Found</h3></li>';
                     return;
                 }
 
@@ -1251,18 +1148,27 @@
                 time, i, index;
 
             for (i = 0; i < l; i++) {
-                index = i % items.length; time = i * spacing; rawSequence.add(animateFunc(items[index]),
-                    time); i <= items.length && seamlessLoop.add("label" + i, time);
-            } rawSequence.time(startTime);
+                index = i % items.length;
+                time = i * spacing;
+                rawSequence.add(animateFunc(items[index]), time);
+                i <= items.length && seamlessLoop.add("label" + i, time);
+            }
+
+            rawSequence.time(startTime);
             seamlessLoop.to(rawSequence, {
-                time: loopTime, duration: loopTime - startTime, ease: "none"
+                time: loopTime,
+                duration: loopTime - startTime,
+                ease: "none"
             }).fromTo(rawSequence, { time: overlap * spacing + 1 }, {
-                time: startTime, duration: startTime - (overlap *
-                    spacing + 1), immediateRender: false, ease: "none"
-            }); return seamlessLoop;
-        } function renderPasteItem(p) {
-            return '';
+                time: startTime,
+                duration: startTime - (overlap * spacing + 1),
+                immediateRender: false,
+                ease: "none"
+            });
+            return seamlessLoop;
         }
+
+        function renderPasteItem(p) { return ''; } // Deprecated helper
 
         async function showDetail(id) {
             // Disable ScrollTrigger/Draggable to prevent carousel hijacking scroll in Detail View
@@ -1341,7 +1247,7 @@
 
             // Toggle visual state immediately
             if (wasActive) {
-                // Not supported visually yet without tracking 'my' reactions perfectly,
+                // Not supported visually yet without tracking 'my' reactions perfectly, 
                 // but for now we assume they can just click.
                 // Actually, let's just animate.
             }
@@ -1395,8 +1301,7 @@
         document.getElementById('rawBtn').addEventListener('click', () => {
             if (window.currentViewedPaste) {
                 const win = window.open();
-                win.document.write(`
-            <pre>${window.currentViewedPaste.content}</pre>`);
+                win.document.write(`<pre>${window.currentViewedPaste.content}</pre>`);
             }
         });
 
@@ -1439,8 +1344,7 @@
             const left = (window.screen.width / 2) - (width / 2);
             const top = (window.screen.height / 2) - (height / 2);
 
-            const popup = window.open('/api/access/auth/discord', 'Discord Auth',
-                `width=${width},height=${height},top=${top},left=${left}`);
+            const popup = window.open('/api/access/auth/discord', 'Discord Auth', `width=${width},height=${height},top=${top},left=${left}`);
 
             window.addEventListener('message', function onMessage(e) {
                 if (e.data.type === 'DISCORD_VERIFIED') {

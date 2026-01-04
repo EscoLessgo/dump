@@ -78,34 +78,41 @@ if (closeAccessBtn) closeAccessBtn.addEventListener('click', () => {
     accessModal.classList.remove('active');
 });
 
-if (generateKeyBtn) generateKeyBtn.addEventListener('click', async () => {
-    console.log('[KEY GEN] Button clicked');
-    generateKeyBtn.disabled = true;
-    generateKeyBtn.textContent = 'Generating...';
-    try {
-        console.log('[KEY GEN] Sending request...');
-        const res = await fetch('/api/access/generate', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        console.log('[KEY GEN] Response status:', res.status);
-        const data = await res.json();
-        console.log('[KEY GEN] Response data:', data);
-        if (data.success) {
-            generatedKey.value = data.key;
-            console.log('[KEY GEN] Key generated successfully');
-        } else {
-            console.error('[KEY GEN] Failed:', data.error);
-            alert('Failed: ' + (data.error || 'Unknown error'));
+
+console.log('[KEY GEN] generateKeyBtn element:', generateKeyBtn);
+if (generateKeyBtn) {
+    console.log('[KEY GEN] Attaching click listener to button');
+    generateKeyBtn.addEventListener('click', async () => {
+        console.log('[KEY GEN] Button clicked');
+        generateKeyBtn.disabled = true;
+        generateKeyBtn.textContent = 'Generating...';
+        try {
+            console.log('[KEY GEN] Sending request...');
+            const res = await fetch('/api/access/generate', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            console.log('[KEY GEN] Response status:', res.status);
+            const data = await res.json();
+            console.log('[KEY GEN] Response data:', data);
+            if (data.success) {
+                generatedKey.value = data.key;
+                console.log('[KEY GEN] Key generated successfully');
+            } else {
+                console.error('[KEY GEN] Failed:', data.error);
+                alert('Failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('[KEY GEN] Error:', e);
+            alert('Error: ' + e.message);
+        } finally {
+            generateKeyBtn.disabled = false;
+            generateKeyBtn.textContent = 'Generate New Key';
         }
-    } catch (e) {
-        console.error('[KEY GEN] Error:', e);
-        alert('Error: ' + e.message);
-    } finally {
-        generateKeyBtn.disabled = false;
-        generateKeyBtn.textContent = 'Generate New Key';
-    }
-});
+    });
+} else {
+    console.error('[KEY GEN] Button element not found!');
+}
 
 if (copyKeyBtn) copyKeyBtn.addEventListener('click', () => {
     if (!generatedKey.value) return;

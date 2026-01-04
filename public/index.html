@@ -565,7 +565,8 @@
     </div>
 
     <!-- Motion Blur -->
-    <div id="motion-blur-container"></div>
+    <!-- Motion Blur -->
+    <div id="motion-blur-container" style="pointer-events: none;"></div>
 
     <!-- Audio -->
     <audio id="bgAudio" loop preload="auto">
@@ -601,6 +602,10 @@
     <!-- Background Media -->
     <div id="video-background-container"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; background: #000;">
+        <!-- Entry BG -->
+        <video id="viewer-entry-bg" autoplay muted loop playsinline class="viewer-bg active">
+            <source src="/public/uploads/rocky-shore-coast.mp4" type="video/mp4">
+        </video>
     </div>
 
 
@@ -1014,7 +1019,7 @@
             const path = window.location.pathname;
             const listBg = document.getElementById('viewer-list-bg');
             const detailBg = document.getElementById('viewer-detail-bg');
-            const entryBgContainer = document.getElementById('video-background-container');
+            const entryBg = document.getElementById('viewer-entry-bg');
 
             if (audio.paused && hasInteracted) {
                 audio.play().catch(console.error);
@@ -1029,14 +1034,14 @@
 
                 if (listBg) listBg.classList.remove('active');
                 if (detailBg) detailBg.classList.remove('active');
-                if (entryBgContainer) entryBgContainer.style.opacity = '1';
+                if (entryBg) entryBg.classList.add('active');
             }
             // Public Viewer
             else if (path.startsWith('/public') || path.startsWith('/v/')) {
                 document.getElementById('view-entry').style.display = 'none';
                 document.getElementById('view-viewer').style.display = 'block';
                 document.body.style.overflow = 'auto'; // Allow scroll
-                if (entryBgContainer) entryBgContainer.style.opacity = '0';
+                if (entryBg) entryBg.classList.remove('active');
 
                 if (path.startsWith('/v/')) {
                     const id = path.split('/')[2];

@@ -28,142 +28,204 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/public/motion-blur.js"></script>
     <style>
-        /* Carousel CSS */
-        .gallery {
-            position: absolute;
+        /* Viewer Video Background */
+        #viewer-bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            background: #050505;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            /* Behind content but above global bg */
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+
+        #viewer-bg-video.active {
+            opacity: 1;
+        }
+
+        /* Redesigned Gallery (Vertical List) */
+        .gallery {
+            position: relative;
+            /* Changed from absolute to flow */
+            width: 100%;
+            min-height: 100vh;
+            overflow-y: auto;
+            /* Allow vertical scrolling */
+            padding-top: 100px;
+            /* Header space */
+            padding-bottom: 100px;
+            background: transparent;
+            /* Let video show */
+            perspective: 1000px;
         }
 
         .cards {
-            position: absolute;
-            width: 20rem;
-            height: 28rem;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            perspective: 1000px;
-            pointer-events: none;
-            /* Let clicks pass to items? No, items need events */
+            position: relative;
+            /* Reset */
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            height: auto;
+            /* Grow with content */
+            top: auto;
+            left: auto;
+            transform: none;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            /* Space between cards */
+            padding: 0 20px;
+            box-sizing: border-box;
         }
 
+        /* Premium Lit Cards */
         .cards li {
-            pointer-events: auto;
-        }
-
-        .cards li {
-            list-style: none;
-            padding: 2rem;
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            height: 250px;
             margin: 0;
-            width: 20rem;
-            height: 28rem;
-            text-align: left;
+            list-style: none;
+            border-radius: 12px;
+
+            /* Glassmorphism Premium */
+            background: linear-gradient(90deg, rgba(10, 10, 15, 0.85) 0%, rgba(20, 20, 25, 0.7) 100%);
+            backdrop-filter: blur(20px);
+
+            /* Default Lit Border */
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            box-shadow:
+                0 0 15px rgba(0, 245, 255, 0.1),
+                inset 0 0 30px rgba(0, 245, 255, 0.05);
+
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+            z-index: 1;
+        }
+
+        /* Inner Glow Bar */
+        .cards li::after {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
-            border-radius: 1rem;
-            /* Image with Dark Gradient Overlay */
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.95) 100%), url('/public/card-bg.jpg');
-            background-size: cover;
-            background-position: center;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .cards li.private-card {
-            /* Distinct Private Style */
-            background: linear-gradient(160deg, rgba(40, 10, 20, 0.95) 0%, rgba(10, 5, 5, 0.98) 100%);
-            border: 1px solid rgba(255, 0, 110, 0.5);
-            box-shadow: 0 0 30px rgba(255, 0, 110, 0.25), inset 0 0 20px rgba(255, 0, 110, 0.05);
+            width: 6px;
+            height: 100%;
+            background: #00f5ff;
+            box-shadow: 0 0 20px #00f5ff;
+            opacity: 0.7;
+            transition: all 0.3s;
+            z-index: 2;
         }
 
         .cards li:hover {
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            transform: scale(1.02) translateX(10px);
+            border-color: #00f5ff;
+            box-shadow:
+                0 10px 40px rgba(0, 245, 255, 0.25),
+                inset 0 0 20px rgba(0, 245, 255, 0.1),
+                0 0 5px rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        .cards li:hover::after {
+            width: 8px;
+            opacity: 1;
+            box-shadow: 0 0 30px #00f5ff, 0 0 10px #fff;
+        }
+
+        /* Private Card Variation */
+        .cards li.private-card {
+            border-color: rgba(255, 0, 110, 0.3);
+            box-shadow:
+                0 0 15px rgba(255, 0, 110, 0.1),
+                inset 0 0 30px rgba(255, 0, 110, 0.05);
+            background: linear-gradient(90deg, rgba(25, 10, 15, 0.85) 0%, rgba(20, 10, 10, 0.7) 100%);
+        }
+
+        .cards li.private-card::after {
+            background: #ff006e;
+            box-shadow: 0 0 20px #ff006e;
         }
 
         .cards li.private-card:hover {
-            border-color: rgba(255, 0, 110, 0.8);
-            box-shadow: 0 0 40px rgba(255, 0, 110, 0.4);
+            border-color: #ff006e;
+            box-shadow:
+                0 10px 40px rgba(255, 0, 110, 0.35),
+                inset 0 0 20px rgba(255, 0, 110, 0.1),
+                0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-content {
+            flex: 1;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 3;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .cards li h3 {
-            font-size: 1.5rem;
-            margin: 0 0 1rem 0;
-            color: #00f5ff;
-            font-weight: 700;
-            text-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+            font-size: 2rem;
+            margin: 0 0 0.5rem 0;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
         }
 
         .cards li.private-card h3 {
-            color: #ff006e;
-            text-shadow: 0 0 15px rgba(255, 0, 110, 0.3);
+            text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
         }
 
         .card-meta {
-            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
             color: #888;
-            margin-bottom: 1rem;
+            font-size: 0.9rem;
             display: flex;
-            gap: 10px;
+            gap: 15px;
+            margin-bottom: 1rem;
         }
 
-        .card-preview {
-            flex: 1;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+        .card-preview-text {
             color: #ccc;
-            opacity: 0.8;
+            font-size: 1rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            line-clamp: 3;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            white-space: pre-wrap;
-            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            pointer-events: none;
+            opacity: 0.8;
+            max-width: 80%;
+        }
+
+        /* Decorative "Tech" elements on card */
+        .cards li::before {
+            display: none;
+            /* Removed */
         }
 
         .actions {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 2rem;
-            z-index: 100;
+            display: none;
+            /* Hide carousel actions */
         }
 
-        .nav-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.05);
+        .drag-hint {
+            display: none;
+            /* Hide drag hint */
         }
 
         .drag-proxy {
-            visibility: hidden;
-            position: absolute;
+            display: none;
         }
 
         /* Shared Styles from Viewer */
@@ -634,11 +696,6 @@
                 <button class="nav-btn prev">&larr; Prev</button>
                 <button class="nav-btn next">Next &rarr;</button>
             </div>
-
-            <div id="dragHint" class="drag-hint">
-                <div class="hand-anim">👆</div>
-                <span>Try clicking and dragging the slides for quicker viewing!</span>
-            </div>
         </div>
 
         <!-- Detail View Overlay -->
@@ -929,9 +986,8 @@
         function handleRoute() {
             const path = window.location.pathname;
 
-            // Ensure audio is trying to play on route change (interaction happened)
             if (audio.paused && hasInteracted) {
-                audio.play().catch(e => console.log('Resume play failed', e));
+                audio.play().catch(console.error);
                 updateAudioIcon();
             }
 
@@ -995,7 +1051,10 @@
                 }
 
                 if (pastes.length === 0) {
-                    cardsContainer.innerHTML = '<li style="display:flex; justify-content:center; align-items:center; background:none; border:none; box-shadow:none;"><h3>No Pastes Found</h3></li>';
+                    cardsContainer.innerHTML = '<li
+                    style = "display:flex; justify-content:center; align-items:center; background:none; border:none; box-shadow:none;" >
+                        <h3>No Pastes Found</h3>
+        </li > ';
                     return;
                 }
 
@@ -1148,66 +1207,55 @@
                 time, i, index;
 
             for (i = 0; i < l; i++) {
-                index = i % items.length;
-                time = i * spacing;
-                rawSequence.add(animateFunc(items[index]), time);
-                i <= items.length && seamlessLoop.add("label" + i, time);
-            }
-
-            rawSequence.time(startTime);
+                index = i % items.length; time = i * spacing; rawSequence.add(animateFunc(items[index]),
+                    time); i <= items.length && seamlessLoop.add("label" + i, time);
+            } rawSequence.time(startTime);
             seamlessLoop.to(rawSequence, {
-                time: loopTime,
-                duration: loopTime - startTime,
-                ease: "none"
+                time: loopTime, duration: loopTime - startTime, ease: "none"
             }).fromTo(rawSequence, { time: overlap * spacing + 1 }, {
-                time: startTime,
-                duration: startTime - (overlap * spacing + 1),
-                immediateRender: false,
-                ease: "none"
-            });
-            return seamlessLoop;
-        }
+                time: startTime, duration: startTime - (overlap *
+                    spacing + 1), immediateRender: false, ease: "none"
+            }); return seamlessLoop;
+        } function renderPasteItem(p) {
+            return '';
+        } // Deprecated helper async function showDetail(id) { // Disable ScrollTrigger/Draggable to
+            prevent carousel hijacking scroll in Detail View if (window.ScrollTrigger)
+            ScrollTrigger.getAll().forEach(t => t.disable());
+        if (window.Draggable) Draggable.get(".cards")?.disable();
 
-        function renderPasteItem(p) { return ''; } // Deprecated helper
+        listView.style.display = 'none';
+        detailView.style.display = 'block';
 
-        async function showDetail(id) {
-            // Disable ScrollTrigger/Draggable to prevent carousel hijacking scroll in Detail View
-            if (window.ScrollTrigger) ScrollTrigger.getAll().forEach(t => t.disable());
-            if (window.Draggable) Draggable.get(".cards")?.disable();
+        detailLoading.style.display = 'flex';
+        notFoundState.style.display = 'none';
+        pasteViewContent.style.display = 'none';
 
-            listView.style.display = 'none';
-            detailView.style.display = 'block';
-
-            detailLoading.style.display = 'flex';
-            notFoundState.style.display = 'none';
-            pasteViewContent.style.display = 'none';
-
+        try {
+            let paste = null;
             try {
-                let paste = null;
-                try {
-                    paste = await storage.getPaste(id);
-                } catch (e) {
-                    if (e.message.includes('401')) {
-                        const pwd = prompt('🔒 Password required:');
-                        if (!pwd) throw new Error('Cancelled');
-                        paste = await storage.getPaste(id, true, pwd);
-                    } else {
-                        throw e;
-                    }
+                paste = await storage.getPaste(id);
+            } catch (e) {
+                if (e.message.includes('401')) {
+                    const pwd = prompt('🔒 Password required:');
+                    if (!pwd) throw new Error('Cancelled');
+                    paste = await storage.getPaste(id, true, pwd);
+                } else {
+                    throw e;
                 }
-
-                if (!paste) throw new Error('Not found');
-
-                renderPasteDetail(paste);
-                detailLoading.style.display = 'none';
-                pasteViewContent.style.display = 'block';
-
-            } catch (err) {
-                console.error(err);
-                detailLoading.style.display = 'none';
-                if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
             }
+
+            if (!paste) throw new Error('Not found');
+
+            renderPasteDetail(paste);
+            detailLoading.style.display = 'none';
+            pasteViewContent.style.display = 'block';
+
+        } catch (err) {
+            console.error(err);
+            detailLoading.style.display = 'none';
+            if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
         }
+            }
 
         function renderPasteDetail(paste) {
             pasteTitle.textContent = paste.title || 'Untitled';
@@ -1247,7 +1295,7 @@
 
             // Toggle visual state immediately
             if (wasActive) {
-                // Not supported visually yet without tracking 'my' reactions perfectly, 
+                // Not supported visually yet without tracking 'my' reactions perfectly,
                 // but for now we assume they can just click.
                 // Actually, let's just animate.
             }
@@ -1301,7 +1349,8 @@
         document.getElementById('rawBtn').addEventListener('click', () => {
             if (window.currentViewedPaste) {
                 const win = window.open();
-                win.document.write(`<pre>${window.currentViewedPaste.content}</pre>`);
+                win.document.write(`
+            <pre>${window.currentViewedPaste.content}</pre>`);
             }
         });
 
@@ -1344,7 +1393,8 @@
             const left = (window.screen.width / 2) - (width / 2);
             const top = (window.screen.height / 2) - (height / 2);
 
-            const popup = window.open('/api/access/auth/discord', 'Discord Auth', `width=${width},height=${height},top=${top},left=${left}`);
+            const popup = window.open('/api/access/auth/discord', 'Discord Auth',
+                `width=${width},height=${height},top=${top},left=${left}`);
 
             window.addEventListener('message', function onMessage(e) {
                 if (e.data.type === 'DISCORD_VERIFIED') {

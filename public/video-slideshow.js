@@ -1,98 +1,77 @@
 
 const videoPlaylist = [
     "/public/uploads/rocky-shore-coast.mp4",
-    "https://i.imgur.com/5llUoOV.mp4",
 ];
 
 class VideoSlideshow {
-    constructor(containerId, videos) {
-        this.container = document.getElementById(containerId);
-        this.videos = videos;
+    constructor(playlist) {
+        this.playlist = playlist;
         this.currentIndex = 0;
-        this.activePlayer = 0; // 0 or 1
-
-        if (!this.container) {
-            console.error("Video container not found");
-            return;
-        }
-
-        // Create two video elements for crossfading
-        this.players = [
-            this.createVideoElement(),
-            this.createVideoElement()
-        ];
-
-        // Append to container
-        this.players.forEach(p => this.container.appendChild(p));
-
-        // Start the first video
-        this.playVideo(0);
+        this.container = document.getElementById('video-background-container');
+        this.currentVideo = null;
+        this.nextVideo = null;
+        this.init();
     }
 
-    createVideoElement() {
+    init() {
+        if (!this.container || this.playlist.length === 0) return;
+        this.playVideo(this.playlist[0]);
+    }
+
+    createVideoElement(src) {
         const video = document.createElement('video');
+        video.src = src;
         video.autoplay = true;
         video.muted = true;
+        video.loop = true; // Loop single video if only 1, or playlist logic
         video.playsInline = true;
-        // video.loop = false; // We handle looping manually via the slideshow logic
-
-        // Style for full screen background
-        Object.assign(video.style, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: '0', // Start hidden
-            transition: 'opacity 1.5s ease-in-out' // Smooth crossfade
-        });
-
-        // Listen for end of video to trigger next
-        video.addEventListener('ended', () => {
-            this.next();
-        });
-
+        video.style.position = 'absolute';
+        video.style.top = '0';
+        video.style.left = '0';
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        video.style.opacity = '0';
+        video.style.transition = 'opacity 1.5s ease-in-out';
+        video.style.zIndex = '-1';
         return video;
     }
 
-    playVideo(index) {
-        const video = this.players[this.activePlayer];
-        video.src = this.videos[index];
+    playVideo(src) {
+        const video = this.createVideoElement(src);
+        this.container.appendChild(video);
 
-        // Ensure ready to play
-        video.onloadeddata = () => {
-            video.play().then(() => {
-                video.style.opacity = '0.6'; // Target opacity (adjust as needed)
-                // Hide the other player
-                const otherPlayer = this.players[this.activePlayer === 0 ? 1 : 0];
-                otherPlayer.style.opacity = '0';
+        // Wait for load
+        video.addEventListener('loadeddata', () => {
+            video.style.opacity = '0.6'; // Target opacity
+            video.play().catch(e => console.log("Autoplay blocked", e));
 
-                // After transition, clear the old src to save resources? 
-                // Maybe not strictly necessary for simple loops but good practice.
+            if (this.currentVideo) {
+                this.currentVideo.style.opacity = '0';
                 setTimeout(() => {
-                    otherPlayer.pause();
-                    otherPlayer.currentTime = 0;
-                }, 1500); // match transition duration
-            }).catch(e => console.error("Auto-play failed:", e));
-        };
+                    if (this.currentVideo && this.currentVideo.parentNode) {
+                        this.currentVideo.parentNode.removeChild(this.currentVideo);
+                    }
+                    this.currentVideo = video;
+                }, 1500);
+            } else {
+                this.currentVideo = video;
+            }
+        });
+
+        // Loop Logic
+        video.addEventListener('ended', () => {
+            this.next();
+        });
     }
 
     next() {
-        // Prepare next index
-        this.currentIndex = (this.currentIndex + 1) % this.videos.length;
-
-        // Switch active player
-        this.activePlayer = this.activePlayer === 0 ? 1 : 0;
-
-        this.playVideo(this.currentIndex);
+        if (this.playlist.length <= 1) return; // Loop handled by video.loop attribute
+        this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+        this.playVideo(this.playlist[this.currentIndex]);
     }
 }
 
-// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Only init if we have a container
-    if (document.getElementById('video-background-container')) {
-        new VideoSlideshow('video-background-container', videoPlaylist);
-    }
+    new VideoSlideshow(videoPlaylist);
 });

@@ -158,8 +158,10 @@ router.get('/:id', async (req, res) => {
             const accessKey = req.headers['x-access-key'];
             const hasAccess = validateAccessKey(accessKey);
 
-            if (!isAdmin && !hasAccess) {
-                return res.status(403).json({ error: 'Private paste' });
+            // Allow access if user is admin, has a key, OR if the paste has a password 
+            // (we'll let the password check handle the validation later)
+            if (!isAdmin && !hasAccess && !paste.password) {
+                return res.status(403).json({ error: 'Private paste access requires a valid access key.' });
             }
         }
 

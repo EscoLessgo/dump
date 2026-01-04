@@ -1262,44 +1262,46 @@
             }); return seamlessLoop;
         } function renderPasteItem(p) {
             return '';
-        } // Deprecated helper async function showDetail(id) { // Disable ScrollTrigger/Draggable to
-            prevent carousel hijacking scroll in Detail View if (window.ScrollTrigger)
-            ScrollTrigger.getAll().forEach(t => t.disable());
-        if (window.Draggable) Draggable.get(".cards")?.disable();
-
-        listView.style.display = 'none';
-        detailView.style.display = 'block';
-
-        detailLoading.style.display = 'flex';
-        notFoundState.style.display = 'none';
-        pasteViewContent.style.display = 'none';
-
-        try {
-            let paste = null;
-            try {
-                paste = await storage.getPaste(id);
-            } catch (e) {
-                if (e.message.includes('401')) {
-                    const pwd = prompt('🔒 Password required:');
-                    if (!pwd) throw new Error('Cancelled');
-                    paste = await storage.getPaste(id, true, pwd);
-                } else {
-                    throw e;
-                }
-            }
-
-            if (!paste) throw new Error('Not found');
-
-            renderPasteDetail(paste);
-            detailLoading.style.display = 'none';
-            pasteViewContent.style.display = 'block';
-
-        } catch (err) {
-            console.error(err);
-            detailLoading.style.display = 'none';
-            if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
         }
+
+        async function showDetail(id) {
+            // Disable ScrollTrigger/Draggable to prevent carousel hijacking scroll in Detail View
+            if (window.ScrollTrigger) ScrollTrigger.getAll().forEach(t => t.disable());
+            if (window.Draggable) Draggable.get(".cards")?.disable();
+
+            listView.style.display = 'none';
+            detailView.style.display = 'block';
+
+            detailLoading.style.display = 'flex';
+            notFoundState.style.display = 'none';
+            pasteViewContent.style.display = 'none';
+
+            try {
+                let paste = null;
+                try {
+                    paste = await storage.getPaste(id);
+                } catch (e) {
+                    if (e.message.includes('401')) {
+                        const pwd = prompt('🔒 Password required:');
+                        if (!pwd) throw new Error('Cancelled');
+                        paste = await storage.getPaste(id, true, pwd);
+                    } else {
+                        throw e;
+                    }
+                }
+
+                if (!paste) throw new Error('Not found');
+
+                renderPasteDetail(paste);
+                detailLoading.style.display = 'none';
+                pasteViewContent.style.display = 'block';
+
+            } catch (err) {
+                console.error(err);
+                detailLoading.style.display = 'none';
+                if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
             }
+        }
 
         function renderPasteDetail(paste) {
             pasteTitle.textContent = paste.title || 'Untitled';

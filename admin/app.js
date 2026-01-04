@@ -295,10 +295,11 @@ async function loadPasteList() {
                     ${paste.folderId ? `<span>📁 ${escapeHtml(folderMap[paste.folderId] || 'Unknown')}</span>` : ''}
                     ${paste.burnAfterRead ? '<span>🔥 Burn</span>' : ''}
                     ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
+                    <span style="color: var(--primary-start); cursor: pointer;" onclick="event.stopPropagation(); copyPasteUrl('${paste.id}')">🔗 /v/${paste.id}</span>
                 </div>
                 <div class="paste-item-actions">
-                    <button onclick="event.stopPropagation(); copyPasteUrl('${paste.id}')" class="btn-small btn-glass" title="Copy Public URL">
-                        🔗 Link
+                    <button onclick="event.stopPropagation(); copyPasteUrl('${paste.id}')" class="btn-small btn-glass" title="Copy Public URL" style="border-color: var(--primary-start); color: var(--primary-start);">
+                        🔗 Copy Link
                     </button>
                     <button onclick="toggleVisibility('${paste.id}', event)" class="btn-small btn-glass" title="${paste.isPublic ? 'Make Private' : 'Make Public'}">
                         ${paste.isPublic ? '🔒' : '🌍'}
@@ -610,6 +611,21 @@ async function loadPasteForEdit(id) {
         `;
         createPasteBtn.style.background = 'linear-gradient(135deg, #7b42ff, #00f5ff)';
 
+        // Add a temporary copy link button next to update if in edit mode
+        const editorHeader = document.querySelector('.editor-header');
+        let existingQuickCopy = document.getElementById('quickCopyEdit');
+        if (!existingQuickCopy) {
+            existingQuickCopy = document.createElement('button');
+            existingQuickCopy.id = 'quickCopyEdit';
+            existingQuickCopy.className = 'btn-small btn-glass';
+            existingQuickCopy.style.marginLeft = '10px';
+            existingQuickCopy.style.color = 'var(--primary-start)';
+            existingQuickCopy.style.borderColor = 'var(--primary-start)';
+            existingQuickCopy.innerHTML = '🔗 Copy Link';
+            existingQuickCopy.onclick = () => copyPasteUrl(id);
+            editorHeader.querySelector('.quick-actions').appendChild(existingQuickCopy);
+        }
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {
@@ -887,15 +903,26 @@ window.deletePaste = deletePaste;
 window.viewPaste = viewPaste;
 window.resetViews = resetViews;
 window.copyPasteUrl = function (id) {
+    if (!id) return;
     const url = `${window.location.origin}/v/${id}`;
     navigator.clipboard.writeText(url).then(() => {
         // Find the button and give feedback
         const btn = event?.currentTarget || document.activeElement;
-        if (btn && btn.tagName === 'BUTTON') {
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '✅ Copied';
-            setTimeout(() => btn.innerHTML = originalText, 1500);
+        if (btn && (btn.tagName === 'BUTTON' || btn.tagName === 'SPAN')) {
+            const originalContent = btn.innerHTML;
+            const isSpan = btn.tagName === 'SPAN';
+            btn.innerHTML = isSpan ? '✅ Copied!' : '✅ Copied';
+            setTimeout(() => btn.innerHTML = originalContent, 1500);
         }
+    }).catch(err => {
+        // Fallback for non-secure contexts if any
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        alert('Link Copied!');
     });
 };
 

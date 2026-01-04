@@ -28,142 +28,204 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/public/motion-blur.js"></script>
     <style>
-        /* Carousel CSS */
-        .gallery {
-            position: absolute;
+        /* Viewer Video Background */
+        #viewer-bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            background: #050505;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            /* Behind content but above global bg */
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+
+        #viewer-bg-video.active {
+            opacity: 1;
+        }
+
+        /* Redesigned Gallery (Vertical List) */
+        .gallery {
+            position: relative;
+            /* Changed from absolute to flow */
+            width: 100%;
+            min-height: 100vh;
+            overflow-y: auto;
+            /* Allow vertical scrolling */
+            padding-top: 100px;
+            /* Header space */
+            padding-bottom: 100px;
+            background: transparent;
+            /* Let video show */
+            perspective: 1000px;
         }
 
         .cards {
-            position: absolute;
-            width: 20rem;
-            height: 28rem;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            perspective: 1000px;
-            pointer-events: none;
-            /* Let clicks pass to items? No, items need events */
+            position: relative;
+            /* Reset */
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            height: auto;
+            /* Grow with content */
+            top: auto;
+            left: auto;
+            transform: none;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            /* Space between cards */
+            padding: 0 20px;
+            box-sizing: border-box;
         }
 
+        /* Premium Lit Cards */
         .cards li {
-            pointer-events: auto;
-        }
-
-        .cards li {
-            list-style: none;
-            padding: 2rem;
+            position: relative;
+            top: auto;
+            left: auto;
+            width: 100%;
+            height: 250px;
             margin: 0;
-            width: 20rem;
-            height: 28rem;
-            text-align: left;
+            list-style: none;
+            border-radius: 12px;
+
+            /* Glassmorphism Premium */
+            background: linear-gradient(90deg, rgba(10, 10, 15, 0.85) 0%, rgba(20, 20, 25, 0.7) 100%);
+            backdrop-filter: blur(20px);
+
+            /* Default Lit Border */
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            box-shadow:
+                0 0 15px rgba(0, 245, 255, 0.1),
+                inset 0 0 30px rgba(0, 245, 255, 0.05);
+
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+            z-index: 1;
+        }
+
+        /* Inner Glow Bar */
+        .cards li::after {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
-            border-radius: 1rem;
-            /* Image with Dark Gradient Overlay */
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.95) 100%), url('/public/card-bg.jpg');
-            background-size: cover;
-            background-position: center;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .cards li.private-card {
-            /* Distinct Private Style */
-            background: linear-gradient(160deg, rgba(40, 10, 20, 0.95) 0%, rgba(10, 5, 5, 0.98) 100%);
-            border: 1px solid rgba(255, 0, 110, 0.5);
-            box-shadow: 0 0 30px rgba(255, 0, 110, 0.25), inset 0 0 20px rgba(255, 0, 110, 0.05);
+            width: 6px;
+            height: 100%;
+            background: #00f5ff;
+            box-shadow: 0 0 20px #00f5ff;
+            opacity: 0.7;
+            transition: all 0.3s;
+            z-index: 2;
         }
 
         .cards li:hover {
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            transform: scale(1.02) translateX(10px);
+            border-color: #00f5ff;
+            box-shadow:
+                0 10px 40px rgba(0, 245, 255, 0.25),
+                inset 0 0 20px rgba(0, 245, 255, 0.1),
+                0 0 5px rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        .cards li:hover::after {
+            width: 8px;
+            opacity: 1;
+            box-shadow: 0 0 30px #00f5ff, 0 0 10px #fff;
+        }
+
+        /* Private Card Variation */
+        .cards li.private-card {
+            border-color: rgba(255, 0, 110, 0.3);
+            box-shadow:
+                0 0 15px rgba(255, 0, 110, 0.1),
+                inset 0 0 30px rgba(255, 0, 110, 0.05);
+            background: linear-gradient(90deg, rgba(25, 10, 15, 0.85) 0%, rgba(20, 10, 10, 0.7) 100%);
+        }
+
+        .cards li.private-card::after {
+            background: #ff006e;
+            box-shadow: 0 0 20px #ff006e;
         }
 
         .cards li.private-card:hover {
-            border-color: rgba(255, 0, 110, 0.8);
-            box-shadow: 0 0 40px rgba(255, 0, 110, 0.4);
+            border-color: #ff006e;
+            box-shadow:
+                0 10px 40px rgba(255, 0, 110, 0.35),
+                inset 0 0 20px rgba(255, 0, 110, 0.1),
+                0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .card-content {
+            flex: 1;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 3;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .cards li h3 {
-            font-size: 1.5rem;
-            margin: 0 0 1rem 0;
-            color: #00f5ff;
-            font-weight: 700;
-            text-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+            font-size: 2rem;
+            margin: 0 0 0.5rem 0;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
         }
 
         .cards li.private-card h3 {
-            color: #ff006e;
-            text-shadow: 0 0 15px rgba(255, 0, 110, 0.3);
+            text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
         }
 
         .card-meta {
-            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
             color: #888;
-            margin-bottom: 1rem;
+            font-size: 0.9rem;
             display: flex;
-            gap: 10px;
+            gap: 15px;
+            margin-bottom: 1rem;
         }
 
-        .card-preview {
-            flex: 1;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+        .card-preview-text {
             color: #ccc;
-            opacity: 0.8;
+            font-size: 1rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            line-clamp: 3;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            white-space: pre-wrap;
-            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            pointer-events: none;
+            opacity: 0.8;
+            max-width: 80%;
+        }
+
+        /* Decorative "Tech" elements on card */
+        .cards li::before {
+            display: none;
+            /* Removed */
         }
 
         .actions {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 2rem;
-            z-index: 100;
+            display: none;
+            /* Hide carousel actions */
         }
 
-        .nav-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.05);
+        .drag-hint {
+            display: none;
+            /* Hide drag hint */
         }
 
         .drag-proxy {
-            visibility: hidden;
-            position: absolute;
+            display: none;
         }
 
         /* Shared Styles from Viewer */
@@ -534,10 +596,11 @@
     </div>
 
     <!-- Background Media -->
-    <video autoplay muted loop playsinline id="bgVideo"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -5; opacity: 0.6; pointer-events: none;">
-        <source src="https://i.imgur.com/5llUoOV.mp4" type="video/mp4">
-    </video>
+    <!-- Background Media -->
+    <div id="video-background-container"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; background: #000;">
+    </div>
+    <script src="/public/video-slideshow.js"></script>
 
     <!-- View: ENTRY -->
     <div id="view-entry">
@@ -624,7 +687,34 @@
     <!-- View: VIEWER (Merged) -->
     <!-- View: VIEWER (Carousel) -->
     <div id="view-viewer"
-        style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 20; background: #050505;">
+        style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 20; background: transparent;">
+        <!-- Viewer BG (List) -->
+        <video id="viewer-list-bg" autoplay muted loop playsinline class="viewer-bg active">
+            <source src="/public/uploads/list-bg.mp4" type="video/mp4">
+        </video>
+        <!-- Viewer BG (Detail) -->
+        <video id="viewer-detail-bg" autoplay muted loop playsinline class="viewer-bg">
+            <source src="/public/uploads/detail-bg.mp4" type="video/mp4">
+        </video>
+
+        <style>
+            .viewer-bg {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                z-index: -1;
+                opacity: 0;
+                transition: opacity 1.5s ease;
+                pointer-events: none;
+            }
+
+            .viewer-bg.active {
+                opacity: 1;
+            }
+        </style>
 
         <!-- Gallery List -->
         <div id="listView" class="gallery">
@@ -633,545 +723,130 @@
                 <button class="nav-btn prev">&larr; Prev</button>
                 <button class="nav-btn next">Next &rarr;</button>
             </div>
-
-            <div id="dragHint" class="drag-hint">
-                <div class="hand-anim">👆</div>
-                <span>Try clicking and dragging the slides for quicker viewing!</span>
-            </div>
         </div>
 
-        <!-- Detail View Overlay -->
-        <div id="detailView"
-            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 50; overflow-y: auto;">
-            <div class="container" style="max-width: 900px; margin: 0 auto; padding: 4rem 2rem;">
-                <header class="header">
-                    <div class="logo">
-                        <div class="logo-text">
-                            <h1 style="font-size: 1.5rem;">PasteBin Pro</h1>
-                            <span class="badge">Detail View</span>
-                        </div>
-                    </div>
-                    <div class="header-actions">
-                        <button id="backBtn" class="btn btn-secondary">Back to Gallery</button>
-                        <button id="rawBtn" class="btn btn-glass">Raw</button>
-                        <button id="copyBtn" class="btn btn-secondary">Copy</button>
-                    </div>
-                </header>
-                <main id="mainContent" style="margin-top: 2rem;">
-                    <div id="detailLoading" class="state-container" style="display: none;">
-                        <div class="loader"></div>
-                        <p>Loading paste...</p>
-                    </div>
-                    <div id="notFoundState" class="state-container" style="display: none;">
-                        <h2>Paste Not Found</h2>
-                    </div>
-                    <div id="pasteViewContent" style="display: none;">
-                        <div class="paste-header">
-                            <div class="paste-info">
-                                <h2 id="pasteTitle">Loading...</h2>
-                                <div class="paste-meta">
-                                    <span class="language-tag" id="pasteLanguage">plaintext</span>
-                                    <span class="meta-item" id="pasteViews">0 views</span>
-                                    <span class="meta-item" id="pasteDate">Just now</span>
-                                </div>
-                            </div>
-                            <div class="reactions-container">
-                                <button class="reaction-btn" data-type="like" onclick="toggleReaction('like')">
-                                    <span class="emoji">👍</span> <span class="count" id="count-like">0</span>
-                                </button>
-                                <button class="reaction-btn" data-type="heart" onclick="toggleReaction('heart')">
-                                    <span class="emoji">❤️</span> <span class="count" id="count-heart">0</span>
-                                </button>
-                                <button class="reaction-btn" data-type="star" onclick="toggleReaction('star')">
-                                    <span class="emoji">⭐</span> <span class="count" id="count-star">0</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="code-container">
-                            <div class="code-header">
-                                <div class="code-title" id="codeTitle">code.txt</div>
-                            </div>
-                            <pre id="pasteContentContainer"><code id="pasteContent" class="hljs"></code></pre>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </div>
-    </div>
+        <!-- ... -->
 
-    <!-- Key Entry Modal -->
-    <div id="keyModal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="close-modal" onclick="closeModals()">✕</div>
-            <h2 style="margin-top: 0;">Enter Access Key</h2>
-            <div class="input-group">
-                <label>Access Key</label>
-                <input type="password" id="accessKeyInput" placeholder="sk-...">
-            </div>
-            <button type="button" class="btn-submit blue" onclick="submitKey()">Unlock</button>
-            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem; text-align: center;">
-                Don't have one? <a href="#" onclick="openRequestModal(); return false;" style="color: #00f5ff;">Request
-                    Access</a>
-            </p>
-        </div>
-    </div>
+        <script>
+            // Updated Route Handler
+            function handleRoute() {
+                const path = window.location.pathname;
+                const listBg = document.getElementById('viewer-list-bg');
+                const detailBg = document.getElementById('viewer-detail-bg');
 
-    <!-- Request Access Modal -->
-    <div id="requestModal" class="modal-overlay">
-        <!-- View 1: Auth Selection -->
-        <div id="req-view-1" class="modal-box">
-            <div class="close-modal" onclick="closeModals()">✕</div>
-            <h2 style="margin-top: 0; color: #ff0050;">Request Access</h2>
-            <p style="color: #888; font-size: 0.9rem; margin-bottom: 2rem;">
-                You must verify your identity before requesting a key.
-            </p>
-            <div class="auth-buttons">
-                <button type="button" class="btn-submit auth-discord" onclick="startDiscordAuth()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right: 10px; vertical-align: bottom;">
-                        <path fill="currentColor"
-                            d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.956 2.42-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.946 2.42-2.157 2.419z" />
-                    </svg>
-                    Log in with Discord (Recommended)
-                </button>
-                <button type="button" class="btn-submit auth-manual" onclick="showManualInput()">
-                    Manual Request
-                </button>
-            </div>
-        </div>
-
-        <!-- View 2: Manual Request Input -->
-        <div id="req-view-manual" class="modal-box" style="display: none;">
-            <div class="close-modal" onclick="resetRequestModal()">✕</div>
-            <h2 style="margin-top: 0; color: #ff0050;">Manual Request</h2>
-            <div class="input-group">
-                <label>Your Identity (Discord User / Email)</label>
-                <input type="text" id="manualIdentity" placeholder="Who are you?">
-            </div>
-            <div class="input-group">
-                <label>Reason</label>
-                <textarea id="manualReason" rows="6"
-                    placeholder="To gain access, explain how you met or know Esco. In addition, please state any specialties that will help him identify you better assuming there are any :)"></textarea>
-            </div>
-            <p
-                style="color: #888; font-size: 0.8rem; margin-bottom: 2rem; border-left: 2px solid #555; padding-left: 10px;">
-                <strong>Note:</strong> You will still be required to confirm your identity later before receiving a key.
-                Verification via Discord is faster and preferred.
-            </p>
-            <button type="button" class="btn-submit red" onclick="submitManualRequest()">Send Request</button>
-        </div>
-
-        <!-- View 4: Request Form -->
-        <div id="req-view-4" class="modal-box" style="display: none;">
-            <div class="close-modal" onclick="closeModals()">✕</div>
-            <h2 style="margin-top: 0; color: #ff0050;">Submit Request</h2>
-            <div class="input-group">
-                <label>Verified ID</label>
-                <input type="text" id="verifiedId" readonly style="opacity: 0.5;">
-            </div>
-            <div class="input-group">
-                <label>Reason</label>
-                <textarea id="reqReason" rows="6"
-                    placeholder="To gain access, explain how you met or know Esco. In addition, please state any specialties that will help him identify you better assuming there are any :)"></textarea>
-            </div>
-            <button type="button" class="btn-submit red" onclick="submitFinalRequest()">Send Request</button>
-        </div>
-    </div>
-
-    <!-- Success Popup -->
-    <div id="successPopup" class="modal-overlay">
-        <div class="modal-box" style="text-align: center;">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
-            <h2>Request Sent!</h2>
-            <p style="color: #ccc; margin-bottom: 2rem;">
-                Your request has been forwarded. <br>
-                For faster approval, join our Discord server:
-            </p>
-            <a href="https://discord.gg/YAqe3UvU5E" target="_blank" class="btn-submit auth-discord"
-                style="text-decoration: none; margin-bottom: 1rem;">
-                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right: 10px; vertical-align: bottom;">
-                    <path fill="currentColor"
-                        d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.956 2.42-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.946 2.42-2.157 2.419z" />
-                </svg>
-                Join Discord
-            </a>
-            <button type="button" class="btn-submit blue" onclick="window.location.reload()">Return to Home</button>
-        </div>
-    </div>
-
-    <!-- Additional Styles for Auth -->
-    <style>
-        .auth-discord {
-            background: #5865F2;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .auth-discord:hover {
-            background: #4752C4;
-        }
-
-        .auth-email {
-            background: #333;
-            color: white;
-        }
-
-        .auth-email:hover {
-            background: #444;
-        }
-    </style>
-
-    <script type="module">
-        import { initLoadingShader } from '/public/loading-shader.js';
-
-        // Initialize shader
-        initLoadingShader('loading-screen');
-
-        // Hide loader logic
-        window.hideLoader = function () {
-            const loader = document.getElementById('loading-screen');
-            if (loader && !loader.classList.contains('fading')) {
-                loader.classList.add('fading');
-                loader.style.transition = 'opacity 1s ease';
-                loader.style.opacity = '0';
-                setTimeout(() => loader.remove(), 1000);
-            }
-        };
-        // Fallback
-        setTimeout(window.hideLoader, 2000);
-    </script>
-
-    <script src="/shared/api.js"></script>
-
-    <script>
-        // --- 1. Audio Logic ---
-        const audio = document.getElementById('bgAudio');
-        const volBtn = document.getElementById('imgVolumeBtn');
-        const iconMuted = document.getElementById('iconMuted');
-        const iconSound = document.getElementById('iconSound');
-        const arrow = document.getElementById('volumeArrow');
-
-        let hasInteracted = false;
-        audio.volume = 0.2; // Increase start volume
-
-        function tryPlayAudio() {
-            if (hasInteracted) return;
-
-            const playPromise = audio.play();
-
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    hasInteracted = true;
+                if (audio.paused && hasInteracted) {
+                    audio.play().catch(console.error);
                     updateAudioIcon();
-                    console.log("Audio playing");
-                    // Show arrow hint
-                    arrow.classList.add('visible');
-                    setTimeout(() => arrow.classList.remove('visible'), 4000);
-                }).catch(error => {
-                    console.log("Autoplay prevented. Waiting for interaction.", error);
-                });
-            }
-        }
+                }
 
-        function toggleAudio() {
-            if (audio.paused) {
-                audio.play();
-                hasInteracted = true;
-            } else {
-                audio.pause();
-            }
-            updateAudioIcon();
-        }
+                if (path === '/' || path === '/index.html') {
+                    document.getElementById('view-entry').style.display = 'flex';
+                    document.getElementById('view-viewer').style.display = 'none';
+                    if (listBg) listBg.classList.remove('active');
+                    if (detailBg) detailBg.classList.remove('active');
+                }
+                else if (path.startsWith('/public') || path.startsWith('/v/')) {
+                    document.getElementById('view-entry').style.display = 'none';
+                    document.getElementById('view-viewer').style.display = 'block';
 
-        function updateAudioIcon() {
-            if (!audio.paused) {
-                iconMuted.style.display = 'none';
-                iconSound.style.display = 'block';
-                volBtn.classList.add('active-volume');
-            } else {
-                iconMuted.style.display = 'block';
-                iconSound.style.display = 'none';
-                volBtn.classList.remove('active-volume');
-            }
-        }
-
-        volBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleAudio();
-        });
-
-        // Try playing immediately
-        tryPlayAudio();
-
-        // Global interaction listeners - aggressive
-        const interactEvents = ['click', 'keydown', 'touchstart', 'mousemove', 'scroll'];
-        interactEvents.forEach(evt =>
-            window.addEventListener(evt, tryPlayAudio, { once: true, capture: true })
-        );
-
-
-        // --- 2. SPA Navigation ---
-
-        // Handle Back/Forward
-        window.addEventListener('popstate', handleRoute);
-        // Handle Initial Load
-        document.addEventListener('DOMContentLoaded', handleRoute);
-
-        function navigateTo(path) {
-            console.log("Navigating to:", path);
-            window.history.pushState({}, '', path);
-            handleRoute();
-        }
-
-        function handleRoute() {
-            const path = window.location.pathname;
-
-            // Ensure audio is trying to play on route change (interaction happened)
-            if (audio.paused && hasInteracted) {
-                audio.play().catch(e => console.log('Resume play failed', e));
-                updateAudioIcon();
-            }
-
-            // Entry Page
-            if (path === '/' || path === '/index.html') {
-                document.getElementById('view-entry').style.display = 'flex';
-                document.getElementById('view-viewer').style.display = 'none';
-                document.body.style.overflow = 'hidden'; // Lock scroll on entry
-            }
-            // Public Viewer
-            else if (path.startsWith('/public') || path.startsWith('/v/')) {
-                document.getElementById('view-entry').style.display = 'none';
-                document.getElementById('view-viewer').style.display = 'block';
-                document.body.style.overflow = 'auto'; // Allow scroll
-
-                if (path.startsWith('/v/')) {
-                    const id = path.split('/')[2];
-                    showDetail(id);
-                } else {
-                    showList();
+                    if (path.startsWith('/v/')) {
+                        // Detail View
+                        const id = path.split('/')[2];
+                        showDetail(id);
+                        if (listBg) listBg.classList.remove('active');
+                        if (detailBg) detailBg.classList.add('active');
+                    } else {
+                        // List View
+                        showList();
+                        if (listBg) listBg.classList.add('active');
+                        if (detailBg) detailBg.classList.remove('active');
+                    }
                 }
             }
-        }
-
-
-        // --- 3. Viewer Logic ---
-        const storage = new PasteStorage();
-        const listView = document.getElementById('listView');
-        const detailView = document.getElementById('detailView');
-        const pasteListContainer = document.getElementById('pasteList');
-        const detailLoading = document.getElementById('detailLoading');
-        const notFoundState = document.getElementById('notFoundState');
-        const pasteViewContent = document.getElementById('pasteViewContent');
-
-        // Elements for detail
-        const pasteTitle = document.getElementById('pasteTitle');
-        const pasteLanguage = document.getElementById('pasteLanguage');
-        const pasteViews = document.getElementById('pasteViews');
-        const pasteDate = document.getElementById('pasteDate');
-        const pasteContent = document.getElementById('pasteContent');
-
-        async function showList() {
-            detailView.style.display = 'none';
-            listView.style.display = 'block';
-            await loadPastes();
-        }
+        </script>
+        // ...
 
         async function loadPastes() {
-            try {
-                const headers = { 'Content-Type': 'application/json' };
-                const key = localStorage.getItem('private_access_key');
-                if (key) headers['x-access-key'] = key;
+        try {
+        const headers = { 'Content-Type': 'application/json' };
+        const key = localStorage.getItem('private_access_key');
+        if (key) headers['x-access-key'] = key;
 
-                const res = await fetch('/api/pastes/public-list', { headers });
-                const pastes = await res.json();
+        const res = await fetch('/api/pastes/public-list', { headers });
+        const pastes = await res.json();
 
-                const cardsContainer = document.querySelector('.cards');
-                if (!cardsContainer) {
-                    console.error('Cards container not found');
-                    return;
-                }
+        const cardsContainer = document.querySelector('.cards');
+        if (!cardsContainer) {
+        console.error('Cards container not found');
+        return;
+        }
 
-                if (pastes.length === 0) {
-                    cardsContainer.innerHTML = '<li style="display:flex; justify-content:center; align-items:center; background:none; border:none; box-shadow:none;"><h3>No Pastes Found</h3></li>';
-                    return;
-                }
+        if (pastes.length === 0) {
+        cardsContainer.innerHTML = '<li
+            style="display:flex; justify-content:center; align-items:center; background:none; border:none; box-shadow:none;">
+            <h3>No Pastes Found</h3>
+        </li>';
+        return;
+        }
 
-                // Populate Cards
-                cardsContainer.innerHTML = pastes.map(p => `
-                    <li onclick="showDetail('${p.id}')" class="${p.isPrivate ? 'private-card' : ''}">
-                        <h3>${p.title || 'Untitled'}</h3>
-                        <div class="card-meta">
-                            <span>${p.language}</span>
-                            ${p.isPrivate ? '<span>🔒 Private</span>' : ''}
-                        </div>
-                        <div class="card-preview">${p.content ? p.content.substring(0, 200).replace(/</g, '&lt;') : ''}</div>
-                    </li>
-                `).join('');
+        // Populate Cards for Vertical List
+        cardsContainer.innerHTML = pastes.map(p => `
+        <li onclick="showDetail('${p.id}')" class="${p.isPrivate ? 'private-card' : ''}">
+            <div class="card-content">
+                <h3>${p.title || 'Untitled'}</h3>
+                <div class="card-meta">
+                    <span>${p.language}</span>
+                    ${p.isPrivate ? '<span>🔒 Private</span>' : ''}
+                    <span>${new Date(p.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div class="card-preview-text">
+                    ${p.content ? p.content.substring(0, 250).replace(/</g, '&lt;' ) : '' } </div>
+                </div>
+        </li>
+        `).join('');
 
-                // Initialize GSAP Loop
-                setTimeout(() => {
-                    if (window.ScrollTrigger) ScrollTrigger.getAll().forEach(t => t.kill());
-                    initCarousel();
-                }, 100);
+        // Simple Fade In Stagger
+        gsap.from(".cards li", {
+        duration: 0.8,
+        y: 50,
+        opacity: 0,
+        stagger: 0.1,
+        ease: "power3.out",
+        clearProps: "all"
+        });
 
-            } catch (e) {
-                console.error(e);
-            }
+        } catch (e) {
+        console.error(e);
+        }
         }
 
         function initCarousel() {
-            gsap.registerPlugin(ScrollTrigger, Draggable);
-
-            // Cleanup old triggers/draggables
-            ScrollTrigger.getAll().forEach(t => t.kill());
-            Draggable.get(".cards")?.kill(); // Kill old draggable if attached to cards
-
-            let iteration = 0;
-
-            // Initial state
-            gsap.set('.cards li', { xPercent: 400, opacity: 0, scale: 0 });
-
-            const spacing = 0.17, // Increased spacing for better separation
-                snapTime = gsap.utils.snap(spacing),
-                cardsItems = gsap.utils.toArray('.cards li'),
-                // Animate Function: Tighter movement (250% instead of 400%) for controlled landing
-                animateFunc = element => {
-                    const tl = gsap.timeline();
-                    tl.fromTo(element, { scale: 0.2, opacity: 0 }, { scale: 1, opacity: 1, zIndex: 100, duration: 0.5, yoyo: true, repeat: 1, ease: "power1.in", immediateRender: false })
-                        .fromTo(element, { xPercent: 250 }, { xPercent: -250, duration: 1, ease: "none", immediateRender: false }, 0);
-                    return tl;
-                },
-                seamlessLoop = buildSeamlessLoop(cardsItems, spacing, animateFunc),
-                playhead = { offset: 0 },
-                wrapTime = gsap.utils.wrap(0, seamlessLoop.duration()),
-                scrub = gsap.to(playhead, {
-                    offset: 0,
-                    onUpdate() {
-                        seamlessLoop.time(wrapTime(playhead.offset));
-                    },
-                    duration: 0.7, // Smoother scrub
-                    ease: "power3",
-                    paused: true
-                }),
-                trigger = ScrollTrigger.create({
-                    start: 0,
-                    onUpdate(self) {
-                        let scroll = self.scroll();
-                        if (scroll > self.end - 1) {
-                            wrap(1, 2);
-                        } else if (scroll < 1 && self.direction < 0) {
-                            wrap(-1, self.end - 2);
-                        } else {
-                            scrub.vars.offset = (iteration + self.progress) * seamlessLoop.duration();
-                            scrub.invalidate().restart();
-                        }
-                    },
-                    end: "+=3000",
-                    pin: ".gallery"
-                }),
-                progressToScroll = progress => gsap.utils.clamp(1, trigger.end - 1, gsap.utils.wrap(0, 1, progress) * trigger.end),
-                wrap = (iterationDelta, scrollTo) => {
-                    iteration += iterationDelta;
-                    trigger.scroll(scrollTo);
-                    trigger.update();
-                };
-
-            ScrollTrigger.addEventListener("scrollEnd", () => scrollToOffset(scrub.vars.offset));
-
-            function scrollToOffset(offset) {
-                let snappedTime = snapTime(offset),
-                    progress = (snappedTime - seamlessLoop.duration() * iteration) / seamlessLoop.duration(),
-                    scroll = progressToScroll(progress);
-                if (progress >= 1 || progress < 0) {
-                    return wrap(Math.floor(progress), scroll);
-                }
-                trigger.scroll(scroll);
-            }
-
-            // Navigation Buttons
-            const nextBtn = document.querySelector(".next");
-            const prevBtn = document.querySelector(".prev");
-            if (nextBtn) nextBtn.replaceWith(nextBtn.cloneNode(true));
-            if (prevBtn) prevBtn.replaceWith(prevBtn.cloneNode(true));
-            document.querySelector(".next").addEventListener("click", () => scrollToOffset(scrub.vars.offset + spacing));
-            document.querySelector(".prev").addEventListener("click", () => scrollToOffset(scrub.vars.offset - spacing));
-
-            // Draggable directly on Container, proxying to virtual value
-            const proxy = document.createElement("div");
-            Draggable.create(proxy, {
-                type: "x",
-                trigger: ".cards", // Drag the container directly
-                inertia: true,
-                onPress() {
-                    const hint = document.getElementById('dragHint');
-                    if (hint) hint.style.opacity = '0';
-                    this.startOffset = scrub.vars.offset;
-                },
-                onDrag() {
-                    scrub.vars.offset = this.startOffset + (this.startX - this.x) * 0.002; // Adjusted sensitivity
-                    scrub.invalidate().restart();
-                },
-                onDragEnd() {
-                    scrollToOffset(scrub.vars.offset);
-                },
-                onClick(e) {
-                    // Handle Click reliably
-                    const target = e.target.closest('li');
-                    if (target) {
-                        // Extract ID from onclick attribute since we can't easily access dataset here if not set
-                        const clickStr = target.getAttribute('onclick');
-                        if (clickStr && clickStr.includes('showDetail')) {
-                            const match = clickStr.match(/'([^']+)'/);
-                            if (match) showDetail(match[1]);
-                        }
-                    }
-                }
-            });
+        // Deprecated - Vertical list uses native scroll
         }
 
         function buildSeamlessLoop(items, spacing, animateFunc) {
-            let overlap = Math.ceil(1 / spacing),
-                startTime = items.length * spacing + 0.5,
-                loopTime = (items.length + overlap) * spacing + 1,
-                rawSequence = gsap.timeline({ paused: true }),
-                seamlessLoop = gsap.timeline({
-                    paused: true,
-                    repeat: -1,
-                    onRepeat() {
-                        this._time === this._dur && (this._tTime += this._dur - 0.01);
-                    }
-                }),
-                l = items.length + overlap * 2,
-                time, i, index;
-
-            for (i = 0; i < l; i++) {
-                index = i % items.length;
-                time = i * spacing;
-                rawSequence.add(animateFunc(items[index]), time);
-                i <= items.length && seamlessLoop.add("label" + i, time);
-            }
-
-            rawSequence.time(startTime);
-            seamlessLoop.to(rawSequence, {
-                time: loopTime,
-                duration: loopTime - startTime,
-                ease: "none"
-            }).fromTo(rawSequence, { time: overlap * spacing + 1 }, {
-                time: startTime,
-                duration: startTime - (overlap * spacing + 1),
-                immediateRender: false,
-                ease: "none"
-            });
-            return seamlessLoop;
+        let overlap = Math.ceil(1 / spacing),
+        startTime = items.length * spacing + 0.5,
+        loopTime = (items.length + overlap) * spacing + 1,
+        rawSequence = gsap.timeline({ paused: true }),
+        seamlessLoop = gsap.timeline({
+        paused: true,
+        repeat: -1,
+        onRepeat() {
+        this._time === this._dur && (this._tTime += this._dur - 0.01);
         }
+        }),
+        l = items.length + overlap * 2,
+        time, i, index;
 
-        function renderPasteItem(p) { return ''; } // Deprecated helper
-
-        async function showDetail(id) {
-            // Disable ScrollTrigger/Draggable to prevent carousel hijacking scroll in Detail View
-            if (window.ScrollTrigger) ScrollTrigger.getAll().forEach(t => t.disable());
+        for (i = 0; i < l; i++) { index=i % items.length; time=i * spacing; rawSequence.add(animateFunc(items[index]),
+            time); i <=items.length && seamlessLoop.add("label" + i, time); } rawSequence.time(startTime);
+            seamlessLoop.to(rawSequence, { time: loopTime, duration: loopTime - startTime, ease: "none"
+            }).fromTo(rawSequence, { time: overlap * spacing + 1 }, { time: startTime, duration: startTime - (overlap *
+            spacing + 1), immediateRender: false, ease: "none" }); return seamlessLoop; } function renderPasteItem(p) {
+            return '' ; } // Deprecated helper async function showDetail(id) { // Disable ScrollTrigger/Draggable to
+            prevent carousel hijacking scroll in Detail View if (window.ScrollTrigger)
+            ScrollTrigger.getAll().forEach(t=> t.disable());
             if (window.Draggable) Draggable.get(".cards")?.disable();
 
             listView.style.display = 'none';
@@ -1182,33 +857,33 @@
             pasteViewContent.style.display = 'none';
 
             try {
-                let paste = null;
-                try {
-                    paste = await storage.getPaste(id);
-                } catch (e) {
-                    if (e.message.includes('401')) {
-                        const pwd = prompt('🔒 Password required:');
-                        if (!pwd) throw new Error('Cancelled');
-                        paste = await storage.getPaste(id, true, pwd);
-                    } else {
-                        throw e;
-                    }
-                }
+            let paste = null;
+            try {
+            paste = await storage.getPaste(id);
+            } catch (e) {
+            if (e.message.includes('401')) {
+            const pwd = prompt('🔒 Password required:');
+            if (!pwd) throw new Error('Cancelled');
+            paste = await storage.getPaste(id, true, pwd);
+            } else {
+            throw e;
+            }
+            }
 
-                if (!paste) throw new Error('Not found');
+            if (!paste) throw new Error('Not found');
 
-                renderPasteDetail(paste);
-                detailLoading.style.display = 'none';
-                pasteViewContent.style.display = 'block';
+            renderPasteDetail(paste);
+            detailLoading.style.display = 'none';
+            pasteViewContent.style.display = 'block';
 
             } catch (err) {
-                console.error(err);
-                detailLoading.style.display = 'none';
-                if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
+            console.error(err);
+            detailLoading.style.display = 'none';
+            if (err.message !== 'Cancelled') notFoundState.style.display = 'flex';
             }
-        }
+            }
 
-        function renderPasteDetail(paste) {
+            function renderPasteDetail(paste) {
             pasteTitle.textContent = paste.title || 'Untitled';
             pasteLanguage.textContent = paste.language;
             pasteViews.textContent = `${paste.views} views`;
@@ -1216,25 +891,25 @@
 
             pasteContent.className = `hljs language-${paste.language}`;
             if (paste.language === 'markdown') {
-                pasteContent.innerHTML = marked.parse(paste.content);
+            pasteContent.innerHTML = marked.parse(paste.content);
             } else {
-                pasteContent.textContent = paste.content;
-                hljs.highlightElement(pasteContent);
+            pasteContent.textContent = paste.content;
+            hljs.highlightElement(pasteContent);
             }
             window.currentViewedPaste = paste;
 
             // Reactions
             if (paste.reactions) {
-                document.getElementById('count-like').textContent = paste.reactions.like || 0;
-                document.getElementById('count-heart').textContent = paste.reactions.heart || 0;
-                document.getElementById('count-star').textContent = paste.reactions.star || 0;
+            document.getElementById('count-like').textContent = paste.reactions.like || 0;
+            document.getElementById('count-heart').textContent = paste.reactions.heart || 0;
+            document.getElementById('count-star').textContent = paste.reactions.star || 0;
             }
 
             // Cleanup active states (simple reset for now)
             document.querySelectorAll('.reaction-btn').forEach(b => b.classList.remove('active'));
-        }
+            }
 
-        window.toggleReaction = async function (type) {
+            window.toggleReaction = async function (type) {
             if (!window.currentViewedPaste) return;
             const btn = document.querySelector(`.reaction-btn[data-type="${type}"]`);
             if (!btn) return;
@@ -1246,133 +921,135 @@
 
             // Toggle visual state immediately
             if (wasActive) {
-                // Not supported visually yet without tracking 'my' reactions perfectly, 
-                // but for now we assume they can just click.
-                // Actually, let's just animate.
+            // Not supported visually yet without tracking 'my' reactions perfectly,
+            // but for now we assume they can just click.
+            // Actually, let's just animate.
             }
 
             try {
-                const res = await fetch(`/api/pastes/${window.currentViewedPaste.id}/react`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type })
-                });
-                const data = await res.json();
+            const res = await fetch(`/api/pastes/${window.currentViewedPaste.id}/react`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+            });
+            const data = await res.json();
 
-                if (data.success) {
-                    if (data.action === 'added') {
-                        countEl.textContent = current + 1;
-                        btn.classList.add('active');
-                    } else if (data.action === 'removed') {
-                        countEl.textContent = Math.max(0, current - 1);
-                        btn.classList.remove('active');
-                    }
-                } else if (data.authRequired) {
-                    // Not logged in -> Prompt Discord Login
-                    alert("You must log in with Discord to react/vote.");
+            if (data.success) {
+            if (data.action === 'added') {
+            countEl.textContent = current + 1;
+            btn.classList.add('active');
+            } else if (data.action === 'removed') {
+            countEl.textContent = Math.max(0, current - 1);
+            btn.classList.remove('active');
+            }
+            } else if (data.authRequired) {
+            // Not logged in -> Prompt Discord Login
+            alert("You must log in with Discord to react/vote.");
 
-                    // Reset modal state to just show Discord button and "Login" title
-                    closeModals();
-                    resetRequestModal();
+            // Reset modal state to just show Discord button and "Login" title
+            closeModals();
+            resetRequestModal();
 
-                    // Small hack to re-purpose the Request Modal for just Login
-                    const title = document.querySelector('#req-view-1 h2');
-                    if (title) title.textContent = "Login Required";
-                    const subtitle = document.querySelector('#req-view-1 p');
-                    if (subtitle) subtitle.textContent = "Please log in with Discord to continue.";
+            // Small hack to re-purpose the Request Modal for just Login
+            const title = document.querySelector('#req-view-1 h2');
+            if (title) title.textContent = "Login Required";
+            const subtitle = document.querySelector('#req-view-1 p');
+            if (subtitle) subtitle.textContent = "Please log in with Discord to continue.";
 
-                    // Hide Manual button if we only want Discord for reactions
-                    const manualBtn = document.querySelector('.auth-manual');
-                    if (manualBtn) manualBtn.style.display = 'none';
+            // Hide Manual button if we only want Discord for reactions
+            const manualBtn = document.querySelector('.auth-manual');
+            if (manualBtn) manualBtn.style.display = 'none';
 
-                    document.getElementById('requestModal').classList.add('active');
-                }
+            document.getElementById('requestModal').classList.add('active');
+            }
             } catch (e) {
-                console.error("Reaction failed", e);
+            console.error("Reaction failed", e);
             }
-        }
+            }
 
-        // Viewer Buttons
-        document.getElementById('backBtn').addEventListener('click', () => navigateTo('/public'));
-        document.getElementById('copyBtn').addEventListener('click', () => {
+            // Viewer Buttons
+            document.getElementById('backBtn').addEventListener('click', () => navigateTo('/public'));
+            document.getElementById('copyBtn').addEventListener('click', () => {
             if (window.currentViewedPaste) navigator.clipboard.writeText(window.currentViewedPaste.content);
-        });
-        document.getElementById('rawBtn').addEventListener('click', () => {
+            });
+            document.getElementById('rawBtn').addEventListener('click', () => {
             if (window.currentViewedPaste) {
-                const win = window.open();
-                win.document.write(`<pre>${window.currentViewedPaste.content}</pre>`);
+            const win = window.open();
+            win.document.write(`
+            <pre>${window.currentViewedPaste.content}</pre>`);
             }
-        });
+            });
 
 
-        // --- 4. Auth & Modal Logic (Restored) ---
-        let currentEmail = '';
-        let authMethod = '';
+            // --- 4. Auth & Modal Logic (Restored) ---
+            let currentEmail = '';
+            let authMethod = '';
 
-        window.openKeyModal = function () {
+            window.openKeyModal = function () {
             closeModals();
             document.getElementById('keyModal').classList.add('active');
-        }
+            }
 
-        window.openRequestModal = function () {
+            window.openRequestModal = function () {
             console.log("Opening request modal");
             closeModals();
             resetRequestModal();
             document.getElementById('requestModal').classList.add('active');
-        }
+            }
 
-        window.closeModals = function () {
+            window.closeModals = function () {
             document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
-        }
+            }
 
-        window.switchView = function (id) {
+            window.switchView = function (id) {
             document.querySelectorAll('#requestModal .modal-box').forEach(el => el.style.display = 'none');
             document.getElementById(id).style.display = 'block';
-        }
+            }
 
-        window.resetRequestModal = function () {
+            window.resetRequestModal = function () {
             switchView('req-view-1');
             document.getElementById('manualIdentity').value = '';
             document.getElementById('manualReason').value = '';
             document.getElementById('reqReason').value = '';
-        }
+            }
 
-        window.startDiscordAuth = function () {
+            window.startDiscordAuth = function () {
             const width = 500;
             const height = 800;
             const left = (window.screen.width / 2) - (width / 2);
             const top = (window.screen.height / 2) - (height / 2);
 
-            const popup = window.open('/api/access/auth/discord', 'Discord Auth', `width=${width},height=${height},top=${top},left=${left}`);
+            const popup = window.open('/api/access/auth/discord', 'Discord Auth',
+            `width=${width},height=${height},top=${top},left=${left}`);
 
             window.addEventListener('message', function onMessage(e) {
-                if (e.data.type === 'DISCORD_VERIFIED') {
-                    window.removeEventListener('message', onMessage);
+            if (e.data.type === 'DISCORD_VERIFIED') {
+            window.removeEventListener('message', onMessage);
 
-                    // FOUND AUTO-KEY?
-                    if (e.data.existingKey) {
-                        localStorage.setItem('private_access_key', e.data.existingKey);
-                        closeModals();
-                        // Show quick success visual
-                        const hint = document.querySelector('.tech-hint');
-                        if (hint) hint.innerHTML = "<span style='color:#00ff88'>ACCESS GRANTED. WELCOME BACK.</span>";
-                        setTimeout(() => navigateTo('/public'), 800);
-                        return;
-                    }
+            // FOUND AUTO-KEY?
+            if (e.data.existingKey) {
+            localStorage.setItem('private_access_key', e.data.existingKey);
+            closeModals();
+            // Show quick success visual
+            const hint = document.querySelector('.tech-hint');
+            if (hint) hint.innerHTML = "<span style='color:#00ff88'>ACCESS GRANTED. WELCOME BACK.</span>";
+            setTimeout(() => navigateTo('/public'), 800);
+            return;
+            }
 
-                    currentEmail = e.data.id;
-                    authMethod = 'Discord';
-                    document.getElementById('verifiedId').value = currentEmail;
-                    switchView('req-view-4');
-                }
+            currentEmail = e.data.id;
+            authMethod = 'Discord';
+            document.getElementById('verifiedId').value = currentEmail;
+            switchView('req-view-4');
+            }
             });
-        }
+            }
 
-        window.showManualInput = function () {
+            window.showManualInput = function () {
             switchView('req-view-manual');
-        }
+            }
 
-        window.submitManualRequest = async function () {
+            window.submitManualRequest = async function () {
             const contact = document.getElementById('manualIdentity').value;
             const reason = document.getElementById('manualReason').value;
             const btn = document.querySelector('#req-view-manual .btn-submit');
@@ -1383,28 +1060,28 @@
             btn.textContent = 'Sending...';
 
             try {
-                const res = await fetch('/api/access/request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contact, reason, method: 'Manual' })
-                });
-                const data = await res.json();
+            const res = await fetch('/api/access/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact, reason, method: 'Manual' })
+            });
+            const data = await res.json();
 
-                if (data.success) {
-                    closeModals();
-                    document.getElementById('successPopup').classList.add('active');
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
-                }
-            } catch (e) {
-                alert('Connection error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Send Request';
+            if (data.success) {
+            closeModals();
+            document.getElementById('successPopup').classList.add('active');
+            } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
             }
-        }
+            } catch (e) {
+            alert('Connection error');
+            } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send Request';
+            }
+            }
 
-        window.submitFinalRequest = async function () {
+            window.submitFinalRequest = async function () {
             const reason = document.getElementById('reqReason').value;
             const btn = document.querySelector('#req-view-4 .btn-submit');
 
@@ -1412,154 +1089,154 @@
             btn.textContent = 'Sending...';
 
             try {
-                const res = await fetch('/api/access/request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contact: currentEmail, reason, method: authMethod })
-                });
-                const data = await res.json();
+            const res = await fetch('/api/access/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact: currentEmail, reason, method: authMethod })
+            });
+            const data = await res.json();
 
-                if (data.success) {
-                    closeModals();
-                    document.getElementById('successPopup').classList.add('active');
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
-                }
-            } catch (e) {
-                alert('Connection error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Send Request';
+            if (data.success) {
+            closeModals();
+            document.getElementById('successPopup').classList.add('active');
+            } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
             }
-        }
+            } catch (e) {
+            alert('Connection error');
+            } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send Request';
+            }
+            }
 
-        window.submitKey = async function () {
+            window.submitKey = async function () {
             const key = document.getElementById('accessKeyInput').value.trim();
             const btn = document.querySelector('#keyModal .btn-submit');
             if (!key) return alert('Enter a key.');
             btn.disabled = true;
             btn.textContent = 'Verifying...';
             try {
-                const res = await fetch('/api/access/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('private_access_key', data.key);
-                    closeModals();
-                    navigateTo('/public'); // Changed from window.location.href to SPA nav
-                } else {
-                    alert(data.error || 'Invalid key.');
-                }
-            } catch (e) {
-                alert('Verification failed.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Unlock';
+            const res = await fetch('/api/access/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key })
+            });
+            const data = await res.json();
+            if (data.success) {
+            localStorage.setItem('private_access_key', data.key);
+            closeModals();
+            navigateTo('/public'); // Changed from window.location.href to SPA nav
+            } else {
+            alert(data.error || 'Invalid key.');
             }
-        }
+            } catch (e) {
+            alert('Verification failed.');
+            } finally {
+            btn.disabled = false;
+            btn.textContent = 'Unlock';
+            }
+            }
 
-        // Explicit Event Listeners for Entry Buttons
-        document.addEventListener('DOMContentLoaded', () => {
+            // Explicit Event Listeners for Entry Buttons
+            document.addEventListener('DOMContentLoaded', () => {
             const btnPublic = document.getElementById('btnPublicAccess');
             const btnPrivate = document.getElementById('btnPrivateAccess');
             const btnRequest = document.getElementById('btnRequestAccess');
 
             if (btnPublic) {
-                btnPublic.onclick = null; // Clear inline just in case
-                btnPublic.addEventListener('click', () => navigateTo('/public'));
+            btnPublic.onclick = null; // Clear inline just in case
+            btnPublic.addEventListener('click', () => navigateTo('/public'));
             }
 
             if (btnPrivate) {
-                btnPrivate.onclick = null;
-                btnPrivate.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    openKeyModal();
-                });
+            btnPrivate.onclick = null;
+            btnPrivate.addEventListener('click', (e) => {
+            e.preventDefault();
+            openKeyModal();
+            });
             }
 
             if (btnRequest) {
-                btnRequest.onclick = null;
-                btnRequest.addEventListener('click', (e) => {
-                    console.log("Request Clicked via Listener");
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openRequestModal();
-                });
+            btnRequest.onclick = null;
+            btnRequest.addEventListener('click', (e) => {
+            console.log("Request Clicked via Listener");
+            e.preventDefault();
+            e.stopPropagation();
+            openRequestModal();
+            });
             }
-        });
+            });
 
-        // Glitch effect on hint
-        const hint = document.querySelector('.tech-hint');
-        if (hint) {
+            // Glitch effect on hint
+            const hint = document.querySelector('.tech-hint');
+            if (hint) {
             setInterval(() => {
-                if (Math.random() > 0.95) {
-                    hint.style.opacity = 0.5;
-                    setTimeout(() => hint.style.opacity = 0.8, 50);
-                }
+            if (Math.random() > 0.95) {
+            hint.style.opacity = 0.5;
+            setTimeout(() => hint.style.opacity = 0.8, 50);
+            }
             }, 100);
-        }
-    </script>
-    <script>
-        window.submitKey = async function () {
-            const key = document.getElementById('accessKeyInput').value.trim();
-            const btn = document.querySelector('#keyModal .btn-submit');
-            if (!key) return alert('Enter a key.');
-
-            btn.disabled = true;
-            btn.textContent = 'Verifying...';
-            try {
-                const res = await fetch('/api/access/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('private_access_key', data.key);
-                    closeModals();
-                    navigateTo('/public');
-                } else {
-                    alert(data.error || 'Invalid key.');
-                }
-            } catch (e) {
-                alert('Verification failed.');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Unlock';
             }
-        };
+            </script>
+            <script>
+                window.submitKey = async function () {
+                    const key = document.getElementById('accessKeyInput').value.trim();
+                    const btn = document.querySelector('#keyModal .btn-submit');
+                    if (!key) return alert('Enter a key.');
 
-        async function checkStoredKey() {
-            const storedKey = localStorage.getItem('private_access_key');
-            if (storedKey) {
-                try {
-                    const res = await fetch('/api/access/verify', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ key: storedKey })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        console.log("✅ Auto-unlocked with stored key");
-                        const entryView = document.getElementById('view-entry');
-                        if (entryView && entryView.style.display !== 'none') {
+                    btn.disabled = true;
+                    btn.textContent = 'Verifying...';
+                    try {
+                        const res = await fetch('/api/access/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            localStorage.setItem('private_access_key', data.key);
+                            closeModals();
                             navigateTo('/public');
+                        } else {
+                            alert(data.error || 'Invalid key.');
                         }
-                    } else {
-                        console.warn("Stored key invalid/expired");
-                        localStorage.removeItem('private_access_key');
+                    } catch (e) {
+                        alert('Verification failed.');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Unlock';
                     }
-                } catch (e) {
-                    console.error("Auto-check failed", e);
+                };
+
+                async function checkStoredKey() {
+                    const storedKey = localStorage.getItem('private_access_key');
+                    if (storedKey) {
+                        try {
+                            const res = await fetch('/api/access/verify', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ key: storedKey })
+                            });
+                            const data = await res.json();
+
+                            if (data.success) {
+                                console.log("✅ Auto-unlocked with stored key");
+                                const entryView = document.getElementById('view-entry');
+                                if (entryView && entryView.style.display !== 'none') {
+                                    navigateTo('/public');
+                                }
+                            } else {
+                                console.warn("Stored key invalid/expired");
+                                localStorage.removeItem('private_access_key');
+                            }
+                        } catch (e) {
+                            console.error("Auto-check failed", e);
+                        }
+                    }
                 }
-            }
-        }
-        document.addEventListener('DOMContentLoaded', checkStoredKey);
-    </script>
+                document.addEventListener('DOMContentLoaded', checkStoredKey);
+            </script>
 </body>
 
 </html>

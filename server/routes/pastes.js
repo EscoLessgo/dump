@@ -48,11 +48,12 @@ router.post('/', requireAuth, async (req, res) => {
     try {
         const { title, content, language, expiresAt, isPublic, burnAfterRead, folderId, password } = req.body;
         const id = generateId();
+        const cleanPassword = password ? password.trim() : null;
 
         db.prepare(`
             INSERT INTO pastes (id, title, content, language, expiresAt, isPublic, burnAfterRead, folderId, password) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0, folderId || null, password || null);
+        `).run(id, title || 'Untitled', content, language || 'plaintext', expiresAt || null, isPublic !== false ? 1 : 0, burnAfterRead ? 1 : 0, folderId || null, cleanPassword);
 
         res.status(201).json({ id, success: true });
     } catch (e) {
@@ -65,6 +66,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     try {
         const { title, content, language, expiresAt, isPublic, burnAfterRead, folderId, password } = req.body;
         const { id } = req.params;
+        const cleanPassword = password ? password.trim() : null;
 
         db.prepare(`
             UPDATE pastes 
@@ -78,7 +80,7 @@ router.put('/:id', requireAuth, async (req, res) => {
             isPublic !== false ? 1 : 0,
             burnAfterRead ? 1 : 0,
             folderId || null,
-            password || null,
+            cleanPassword,
             id
         );
 

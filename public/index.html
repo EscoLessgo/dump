@@ -1035,7 +1035,10 @@
                 const key = localStorage.getItem('private_access_key');
                 if (key) headers['x-access-key'] = key;
 
-                const res = await fetch('/api/pastes/public-list', { headers });
+                const res = await fetch('/api/pastes/public-list', {
+                    headers,
+                    credentials: 'include'
+                });
                 const pastes = await res.json();
 
                 const cardsContainer = document.querySelector('.cards');
@@ -1142,11 +1145,22 @@
             pasteViews.textContent = `${paste.views} views`;
             pasteDate.textContent = new Date(paste.createdAt).toLocaleString();
 
-            pasteContent.className = `hljs language-${paste.language}`;
-            if (paste.language === 'markdown') {
+            // Syntax highlighting or Markdown rendering
+            // Auto-detect markdown images, HTML video tags, or iframes even in plaintext
+            const hasImage = /!\[.*?\]\(.*?\)/.test(paste.content);
+            const hasVideo = /<video.*?src=["'].*?["'].*?>/i.test(paste.content);
+            const hasIframe = /<iframe.*?src=["'].*?["'].*?>/i.test(paste.content);
+
+            if (paste.language === 'markdown' || (paste.language === 'plaintext' && (hasImage || hasVideo || hasIframe))) {
                 pasteContent.innerHTML = marked.parse(paste.content);
+                pasteContent.classList.add('markdown-body');
+                // Apply syntax highlighting to code blocks within markdown
+                pasteContent.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
             } else {
                 pasteContent.textContent = paste.content;
+                pasteContent.className = `hljs language-${paste.language}`;
                 hljs.highlightElement(pasteContent);
             }
             window.currentViewedPaste = paste;
@@ -1183,6 +1197,7 @@
                 const res = await fetch(`/api/pastes/${window.currentViewedPaste.id}/react`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ type })
                 });
                 const data = await res.json();
@@ -1467,6 +1482,7 @@
                     const res = await fetch('/api/access/verify', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({ key: storedKey })
                     });
                     const data = await res.json();

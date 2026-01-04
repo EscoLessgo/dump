@@ -198,11 +198,12 @@ function displayPaste(paste) {
 
     // Syntax highlighting or Markdown rendering
     // Syntax highlighting or Markdown rendering
-    // Auto-detect markdown images or HTML video tags even in plaintext
+    // Auto-detect markdown images, HTML video tags, or iframes even in plaintext
     const hasImage = /!\[.*?\]\(.*?\)/.test(paste.content);
-    const hasVideo = /<video.*?src=["'].*?["'].*?>/.test(paste.content);
+    const hasVideo = /<video.*?src=["'].*?["'].*?>/i.test(paste.content);
+    const hasIframe = /<iframe.*?src=["'].*?["'].*?>/i.test(paste.content);
 
-    if (paste.language === 'markdown' || (paste.language === 'plaintext' && (hasImage || hasVideo))) {
+    if (paste.language === 'markdown' || (paste.language === 'plaintext' && (hasImage || hasVideo || hasIframe))) {
         pasteContent.innerHTML = marked.parse(paste.content);
         pasteContent.classList.add('markdown-body');
         // Apply syntax highlighting to code blocks within markdown

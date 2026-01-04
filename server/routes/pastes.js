@@ -101,10 +101,11 @@ function validateAccessKey(key) {
 router.get('/public-list', (req, res) => {
     try {
         const accessKey = req.headers['x-access-key'];
-        const hasAccess = validateAccessKey(accessKey);
+        const isAdmin = req.session && req.session.isAdmin;
+        const hasAccess = validateAccessKey(accessKey) || isAdmin;
 
         let query = `
-            SELECT p.id, p.title, p.views, p.createdAt, p.password, p.isPublic, f.name as folderName, p.folderId 
+            SELECT p.*, f.name as folderName 
             FROM pastes p 
             LEFT JOIN folders f ON p.folderId = f.id 
             WHERE p.isPublic = 1
@@ -113,7 +114,7 @@ router.get('/public-list', (req, res) => {
         if (hasAccess) {
             // Allow private pastes too
             query = `
-                SELECT p.id, p.title, p.views, p.createdAt, p.password, p.isPublic, f.name as folderName, p.folderId 
+                SELECT p.*, f.name as folderName 
                 FROM pastes p 
                 LEFT JOIN folders f ON p.folderId = f.id 
                 WHERE 1=1 -- Show all (public + private)

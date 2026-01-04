@@ -65,6 +65,7 @@ if (statsBtn) statsBtn.addEventListener('click', showStats);
 if (accessBtn) accessBtn.addEventListener('click', () => {
     accessModal.classList.add('active');
     generatedKey.value = ''; // Clear previous
+    loadKeys(); // Load existing keys
 });
 
 if (closeModalBtn) closeModalBtn.addEventListener('click', () => {
@@ -955,11 +956,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Update Access Btn to load keys
-    const accessBtn = document.getElementById('accessBtn');
-    if (accessBtn) {
-        accessBtn.addEventListener('click', () => {
-            loadKeys();
-        });
-    }
 });

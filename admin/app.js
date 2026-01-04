@@ -297,6 +297,9 @@ async function loadPasteList() {
                     ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
                 </div>
                 <div class="paste-item-actions">
+                    <button onclick="event.stopPropagation(); copyPasteUrl('${paste.id}')" class="btn-small btn-glass" title="Copy Public URL">
+                        🔗 Link
+                    </button>
                     <button onclick="toggleVisibility('${paste.id}', event)" class="btn-small btn-glass" title="${paste.isPublic ? 'Make Private' : 'Make Public'}">
                         ${paste.isPublic ? '🔒' : '🌍'}
                     </button>
@@ -338,6 +341,10 @@ async function showAnalytics(pasteId) {
                     <div style="display: flex; gap: 16px; font-size: 0.875rem; color: var(--text-tertiary)">
                         <span>ID: <code>${pasteId}</code></span>
                         <span>Created: ${formatDateTime(paste.createdAt)}</span>
+                    </div>
+                    <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(0, 245, 255, 0.2);">
+                        <span style="color: var(--primary-start); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 15px;">${window.location.origin}/v/${pasteId}</span>
+                        <button onclick="copyPasteUrl('${pasteId}')" class="btn-small btn-glass" style="padding: 2px 8px; font-size: 0.7rem; border-color: var(--primary-start); color: var(--primary-start);">Copy Link</button>
                     </div>
                 </div>
                 <button onclick="deleteAnalyticsLogs('${pasteId}')" class="btn-small btn-glass" style="color: #ff006e; border-color: rgba(255, 0, 110, 0.3);">
@@ -859,6 +866,18 @@ window.showAnalytics = showAnalytics;
 window.loadPasteForEdit = loadPasteForEdit;
 window.deletePaste = deletePaste;
 window.viewPaste = viewPaste;
+window.copyPasteUrl = function (id) {
+    const url = `${window.location.origin}/v/${id}`;
+    navigator.clipboard.writeText(url).then(() => {
+        // Find the button and give feedback
+        const btn = event?.currentTarget || document.activeElement;
+        if (btn && btn.tagName === 'BUTTON') {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Copied';
+            setTimeout(() => btn.innerHTML = originalText, 1500);
+        }
+    });
+};
 
 // Bind Listeners
 document.addEventListener('DOMContentLoaded', () => {

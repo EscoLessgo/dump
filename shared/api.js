@@ -179,6 +179,20 @@ class PasteAPI {
         }
     }
 
+    async resetViews(id) {
+        try {
+            const response = await fetch(`${this.apiUrl}/pastes/${id}/reset-views`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Error resetting views:', error);
+            throw error;
+        }
+    }
+
     async trackView(pasteId) {
         console.log('trackView handled by API');
     }

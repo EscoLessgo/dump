@@ -362,6 +362,17 @@ router.delete('/:id/analytics', requireAuth, (req, res) => {
     }
 });
 
+// RESET VIEW COUNTER (Separate from Logs)
+router.post('/:id/reset-views', requireAuth, (req, res) => {
+    try {
+        const { id } = req.params;
+        db.prepare('UPDATE pastes SET views = 0 WHERE id = ?').run(id);
+        res.json({ success: true, message: 'View counter reset to 0' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // CLEAR ALL ANALYTICS
 router.delete('/analytics/all', requireAuth, (req, res) => {
     try {

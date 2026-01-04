@@ -347,9 +347,14 @@ async function showAnalytics(pasteId) {
                         <button onclick="copyPasteUrl('${pasteId}')" class="btn-small btn-glass" style="padding: 2px 8px; font-size: 0.7rem; border-color: var(--primary-start); color: var(--primary-start);">Copy Link</button>
                     </div>
                 </div>
-                <button onclick="deleteAnalyticsLogs('${pasteId}')" class="btn-small btn-glass" style="color: #ff006e; border-color: rgba(255, 0, 110, 0.3);">
-                    🗑️ Clear Logs
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                    <button onclick="deleteAnalyticsLogs('${pasteId}')" class="btn-small btn-glass" style="color: #ff006e; border-color: rgba(255, 0, 110, 0.3);">
+                        🗑️ Clear Logs
+                    </button>
+                    <button onclick="resetViews('${pasteId}')" class="btn-small btn-glass" style="color: #ffd700; border-color: rgba(255, 215, 0, 0.3);">
+                        👁️ Reset Views
+                    </button>
+                </div>
             </div>
             
             <div class="stats-grid" style="margin-bottom: 32px">
@@ -531,13 +536,27 @@ async function showAnalytics(pasteId) {
 }
 
 async function deleteAnalyticsLogs(id) {
-    if (!confirm('Are you sure you want to delete all analytics logs for this paste? This cannot be undone.')) return;
+    if (!confirm('Are you sure you want to delete all detailed view logs for this paste? This cannot be undone.')) return;
     try {
         await storage.deleteAnalyticsLogs(id);
         alert('Logs deleted successfully');
         showAnalytics(id); // Refresh
     } catch (error) {
         alert('Failed to delete logs: ' + error.message);
+    }
+}
+
+async function resetViews(id) {
+    if (!confirm('Are you sure you want to reset the view counter for this paste to 0?')) return;
+    try {
+        await storage.resetViews(id);
+        alert('View counter reset successfully');
+        if (analyticsModal.classList.contains('active')) {
+            showAnalytics(id); // Refresh analytics view
+        }
+        await loadPasteList(); // Refresh main list
+    } catch (error) {
+        alert('Failed to reset views: ' + error.message);
     }
 }
 
@@ -866,6 +885,7 @@ window.showAnalytics = showAnalytics;
 window.loadPasteForEdit = loadPasteForEdit;
 window.deletePaste = deletePaste;
 window.viewPaste = viewPaste;
+window.resetViews = resetViews;
 window.copyPasteUrl = function (id) {
     const url = `${window.location.origin}/v/${id}`;
     navigator.clipboard.writeText(url).then(() => {

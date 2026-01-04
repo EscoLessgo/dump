@@ -154,7 +154,10 @@ router.post('/verify', (req, res) => {
 
 // POST /generate - Generate new key (Admin only)
 router.post('/generate', (req, res) => {
-    // In a real app, verify Admin session here!
+    // Admin auth check
+    if (!req.session || !req.session.isAdmin) {
+        return res.status(403).json({ error: 'Admin authentication required' });
+    }
 
     // Generate secure random key
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

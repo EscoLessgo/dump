@@ -82,7 +82,10 @@ if (generateKeyBtn) generateKeyBtn.addEventListener('click', async () => {
     generateKeyBtn.disabled = true;
     generateKeyBtn.textContent = 'Generating...';
     try {
-        const res = await fetch('/api/access/generate', { method: 'POST' });
+        const res = await fetch('/api/access/generate', {
+            method: 'POST',
+            credentials: 'include'
+        });
         const data = await res.json();
         if (data.success) {
             generatedKey.value = data.key;

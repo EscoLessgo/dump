@@ -1118,8 +1118,9 @@
                 try {
                     paste = await storage.getPaste(id);
                 } catch (e) {
-                    if (e.message.includes('401')) {
-                        const pwd = prompt('🔒 Password required:');
+                    // Handle password-protected or private pastes
+                    if (e.message.includes('401') || e.message.includes('403')) {
+                        const pwd = prompt('🔒 This paste is password-protected.\nPlease enter the password:');
                         if (!pwd) throw new Error('Cancelled');
                         paste = await storage.getPaste(id, true, pwd);
                     } else {

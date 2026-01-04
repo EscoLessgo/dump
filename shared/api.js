@@ -84,7 +84,7 @@ class PasteAPI {
 
     async getPaste(id, trackLocation = true, password = null) {
         try {
-            let url = `${this.apiUrl}/pastes/${id}?track=${trackLocation}`;
+            let url = `${this.apiUrl}/pastes/${id}?track=${trackLocation}&_t=${Date.now()}`;
             if (password) {
                 url += `&password=${encodeURIComponent(password)}`;
             }
@@ -106,7 +106,7 @@ class PasteAPI {
 
     async getAllPastes() {
         try {
-            const response = await fetch(`${this.apiUrl}/pastes`, {
+            const response = await fetch(`${this.apiUrl}/pastes?_t=${Date.now()}`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -136,7 +136,7 @@ class PasteAPI {
 
     async getAnalytics(pasteId) {
         try {
-            const response = await fetch(`${this.apiUrl}/pastes/${pasteId}/analytics`, {
+            const response = await fetch(`${this.apiUrl}/pastes/${pasteId}/analytics?_t=${Date.now()}`, {
                 method: 'GET',
                 credentials: 'include'
             });

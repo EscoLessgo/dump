@@ -351,11 +351,12 @@ router.get('/:id/analytics', requireAuth, (req, res) => {
     });
 });
 
-// DELETE ANALYTICS
+// DELETE ANALYTICS (Wipe Logs + Reset Counter)
 router.delete('/:id/analytics', requireAuth, (req, res) => {
     try {
         const { id } = req.params;
         db.prepare('DELETE FROM paste_views WHERE pasteId = ?').run(id);
+        db.prepare('UPDATE pastes SET views = 0 WHERE id = ?').run(id);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -373,10 +374,11 @@ router.post('/:id/reset-views', requireAuth, (req, res) => {
     }
 });
 
-// CLEAR ALL ANALYTICS
+// CLEAR ALL ANALYTICS (Wipe All Logs + Reset All Counters)
 router.delete('/analytics/all', requireAuth, (req, res) => {
     try {
         db.prepare('DELETE FROM paste_views').run();
+        db.prepare('UPDATE pastes SET views = 0').run();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

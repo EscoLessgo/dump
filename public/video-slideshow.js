@@ -1,7 +1,6 @@
 
 const videoPlaylist = [
     "/public/uploads/rocky-shore-coast.mp4",
-    "/public/uploads/list-bg.mp4",
     "/public/uploads/detail-bg.mp4",
 ];
 

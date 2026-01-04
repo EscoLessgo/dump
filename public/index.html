@@ -32,12 +32,14 @@
         .gallery {
             position: relative;
             width: 100%;
-            min-height: 100vh;
+            height: 100vh;
             overflow-y: auto;
             overflow-x: hidden;
             background: transparent;
-            padding: 120px 0 80px;
+            padding: 120px 0;
             scroll-behavior: smooth;
+            scroll-snap-type: y proximity;
+            /* Snap logic */
         }
 
         .gallery::-webkit-scrollbar {
@@ -56,12 +58,13 @@
         .cards {
             position: relative;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
+            /* Wider Cards */
             margin: 0 auto;
-            padding: 0 40px;
+            padding: 0 60px;
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 40px;
             list-style: none;
         }
 
@@ -92,8 +95,9 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.05),
                 inset 0 -1px 0 rgba(0, 0, 0, 0.5);
 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
             overflow: hidden;
+            scroll-snap-align: center;
         }
 
         /* Animated Electric Border Effect */
@@ -133,12 +137,13 @@
             position: absolute;
             inset: 0;
             border-radius: 18px;
-            background: radial-gradient(circle at 50% 0%,
-                    rgba(0, 245, 255, 0.08) 0%,
-                    transparent 60%);
-            opacity: 0;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(0, 245, 255, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 0% 50%, rgba(0, 245, 255, 0.05) 0%, transparent 40%);
+            opacity: 0.3;
             transition: opacity 0.4s ease;
             pointer-events: none;
+            z-index: 1;
         }
 
         /* Private Card Styling */
@@ -198,36 +203,36 @@
                 inset 0 -1px 0 rgba(0, 0, 0, 0.5);
         }
 
-        /* Card Content Layout */
+        /* Updated Card Content Layout */
         .card-content {
             position: relative;
-            padding: 32px 40px;
+            padding: 40px 50px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            z-index: 1;
+            gap: 20px;
+            z-index: 2;
         }
 
-        /* Title Styling */
+        /* Title Styling - Premium Gradient */
         .cards li h3 {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.4rem;
+            font-weight: 800;
             margin: 0;
-            background: linear-gradient(135deg, #00f5ff 0%, #00d4ff 100%);
+            background: linear-gradient(135deg, #fff 0%, #00f5ff 50%, #00d4ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
-            letter-spacing: -0.5px;
-            line-height: 1.2;
+            text-shadow: 0 0 30px rgba(0, 245, 255, 0.4);
+            letter-spacing: -1px;
+            line-height: 1.1;
         }
 
         .cards li.private-card h3 {
-            background: linear-gradient(135deg, #ff006e 0%, #ff3d8f 100%);
+            background: linear-gradient(135deg, #fff 0%, #ff006e 50%, #ff3d8f 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 0 30px rgba(255, 0, 110, 0.3);
+            text-shadow: 0 0 30px rgba(255, 0, 110, 0.4);
         }
 
         /* Meta Information */

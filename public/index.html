@@ -260,6 +260,8 @@
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 15;
+            /* Ensure above background and below loader */
         }
 
         /* ... original styles ... */
@@ -656,15 +658,13 @@
                 }
             </style>
 
-            <div class="button-container" style="position: relative; z-index: 2147483647;">
+            <div class="button-container">
                 <a href="/public" id="btnPublicAccess" class="entry-btn btn-public"
-                    onclick="console.log('Public Clicked'); event.preventDefault(); navigateTo('/public');"
-                    style="pointer-events: auto; display: inline-block; text-decoration: none; text-align: center; cursor: pointer; position: relative; z-index: 2147483647;">
+                    onclick="console.log('Public Clicked'); event.preventDefault(); navigateTo('/public');">
                     Public Access
                 </a>
                 <a href="#" id="btnPrivateAccess" class="entry-btn btn-private"
-                    onclick="console.log('Private Clicked'); openKeyModal(); return false;"
-                    style="pointer-events: auto; display: inline-block; text-decoration: none; text-align: center; cursor: pointer; position: relative; z-index: 2147483647;">
+                    onclick="console.log('Private Clicked'); openKeyModal(); return false;">
                     Private Access
                     <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 0.5rem;">Access Key Required</div>
                 </a>
@@ -684,10 +684,37 @@
         </div>
     </div>
 
-    <!-- View: VIEWER (Merged) -->
-    <!-- View: VIEWER (Carousel) -->
+    <!-- View: VIEWER -->
     <div id="view-viewer"
-        style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 20; background: #050505;">
+        style="display: none; position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh; z-index: 20; background: transparent;">
+
+        <!-- Viewer BG (List) -->
+        <video id="viewer-list-bg" autoplay muted loop playsinline class="viewer-bg active">
+            <source src="/public/uploads/list-bg.mp4" type="video/mp4">
+        </video>
+        <!-- Viewer BG (Detail) -->
+        <video id="viewer-detail-bg" autoplay muted loop playsinline class="viewer-bg">
+            <source src="/public/uploads/detail-bg.mp4" type="video/mp4">
+        </video>
+
+        <style>
+            .viewer-bg {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                z-index: -1;
+                opacity: 0;
+                transition: opacity 1.5s ease;
+                pointer-events: none;
+            }
+
+            .viewer-bg.active {
+                opacity: 1;
+            }
+        </style>
 
         <!-- Gallery List -->
         <div id="listView" class="gallery">
@@ -985,6 +1012,9 @@
 
         function handleRoute() {
             const path = window.location.pathname;
+            const listBg = document.getElementById('viewer-list-bg');
+            const detailBg = document.getElementById('viewer-detail-bg');
+            const entryBgContainer = document.getElementById('video-background-container');
 
             if (audio.paused && hasInteracted) {
                 audio.play().catch(console.error);
@@ -996,18 +1026,27 @@
                 document.getElementById('view-entry').style.display = 'flex';
                 document.getElementById('view-viewer').style.display = 'none';
                 document.body.style.overflow = 'hidden'; // Lock scroll on entry
+
+                if (listBg) listBg.classList.remove('active');
+                if (detailBg) detailBg.classList.remove('active');
+                if (entryBgContainer) entryBgContainer.style.opacity = '1';
             }
             // Public Viewer
             else if (path.startsWith('/public') || path.startsWith('/v/')) {
                 document.getElementById('view-entry').style.display = 'none';
                 document.getElementById('view-viewer').style.display = 'block';
                 document.body.style.overflow = 'auto'; // Allow scroll
+                if (entryBgContainer) entryBgContainer.style.opacity = '0';
 
                 if (path.startsWith('/v/')) {
                     const id = path.split('/')[2];
                     showDetail(id);
+                    if (listBg) listBg.classList.remove('active');
+                    if (detailBg) detailBg.classList.add('active');
                 } else {
                     showList();
+                    if (listBg) listBg.classList.add('active');
+                    if (detailBg) detailBg.classList.remove('active');
                 }
             }
         }

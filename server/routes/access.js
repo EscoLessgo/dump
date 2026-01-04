@@ -115,22 +115,29 @@ router.post('/request', async (req, res) => {
 // POST /verify - Check key
 router.post('/verify', (req, res) => {
     const key = req.body.key?.trim();
+    console.log('[ACCESS] Verify request. Key:', key);
     if (!key) return res.status(400).json({ error: 'Key required' });
 
     try {
         const row = db.prepare('SELECT * FROM access_keys WHERE key = ?').get(key);
+        console.log('[ACCESS] Database result:', row);
 
         if (!row) {
-            console.log(`Key check failed: [${key}]`);
+            console.log(`[ACCESS] Key check failed: [${key}]`);
+            // Let's also check all keys in the database for debugging
+            const allKeys = db.prepare('SELECT key, status FROM access_keys').all();
+            console.log('[ACCESS] All keys in DB:', allKeys);
             return res.status(401).json({ error: 'Key not found.' });
         }
 
         if (row.status !== 'active') {
+            console.log('[ACCESS] Key is not active:', row.status);
             return res.status(401).json({ error: 'Key is not active.' });
         }
 
         // Check Claim Status (Enhanced Security)
         const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
+        console.log('[ACCESS] Request IP:', ip, 'Claimed IP:', row.claimedIp);
 
         if (row.claimedIp && row.claimedIp !== ip) {
             console.warn(`⚠️ Access Denied: Key [${key}] is bound to IP ${row.claimedIp}, but accessed from ${ip}`);
@@ -138,13 +145,14 @@ router.post('/verify', (req, res) => {
         }
 
         if (!row.claimedIp) {
-            console.log(`🔐 Key Claimed: [${key}] matches to IP ${ip}`);
+            console.log(`🔐 Key Claimed: [${key}] matched to IP ${ip}`);
             db.prepare('UPDATE access_keys SET claimedIp = ? WHERE key = ?').run(ip, key);
         }
 
         // Log usage
         db.prepare('UPDATE access_keys SET lastUsedAt = ? WHERE key = ?').run(new Date().toISOString(), key);
 
+        console.log('[ACCESS] Key verified successfully');
         res.json({ success: true, key: row.key, userId: row.userId });
     } catch (e) {
         console.error('Verify Error:', e);

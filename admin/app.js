@@ -250,6 +250,10 @@ function clearForm() {
         Create Paste
     `;
     createPasteBtn.style.background = '';
+
+    // Remove Quick Copy button if it exists
+    const qc = document.getElementById('quickCopyEdit');
+    if (qc) qc.remove();
 }
 
 async function loadPasteList() {
@@ -296,7 +300,6 @@ async function loadPasteList() {
                     ${paste.folderId ? `<span>📁 ${escapeHtml(folderMap[paste.folderId] || 'Unknown')}</span>` : ''}
                     ${paste.burnAfterRead ? '<span>🔥 Burn</span>' : ''}
                     ${!paste.isPublic ? '<span>🔒 Private</span>' : ''}
-                    <span style="color: var(--primary-start); cursor: pointer;" onclick="event.stopPropagation(); copyPasteUrl('${paste.id}')">🔗 /v/${paste.id}</span>
                 </div>
                 <div class="paste-item-actions">
                     <button onclick="event.stopPropagation(); copyPasteUrl('${paste.id}')" class="btn-small btn-glass" title="Copy Public URL" style="border-color: var(--primary-start); color: var(--primary-start);">
@@ -612,19 +615,18 @@ async function loadPasteForEdit(id) {
         `;
         createPasteBtn.style.background = 'linear-gradient(135deg, #7b42ff, #00f5ff)';
 
-        // Add a temporary copy link button next to update if in edit mode
-        const editorHeader = document.querySelector('.editor-header');
-        let existingQuickCopy = document.getElementById('quickCopyEdit');
-        if (!existingQuickCopy) {
-            existingQuickCopy = document.createElement('button');
-            existingQuickCopy.id = 'quickCopyEdit';
-            existingQuickCopy.className = 'btn-small btn-glass';
-            existingQuickCopy.style.marginLeft = '10px';
-            existingQuickCopy.style.color = 'var(--primary-start)';
-            existingQuickCopy.style.borderColor = 'var(--primary-start)';
-            existingQuickCopy.innerHTML = '🔗 Copy Link';
-            existingQuickCopy.onclick = () => copyPasteUrl(id);
-            editorHeader.querySelector('.quick-actions').appendChild(existingQuickCopy);
+        // Add a temporary copy link button next to update in quick-actions
+        const quickActions = document.querySelector('.quick-actions');
+        if (!document.getElementById('quickCopyEdit')) {
+            const btn = document.createElement('button');
+            btn.id = 'quickCopyEdit';
+            btn.className = 'btn-icon';
+            btn.title = 'Copy Link';
+            btn.style.color = '#00f5ff';
+            btn.style.borderColor = 'rgba(0, 245, 255, 0.3)';
+            btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+            btn.onclick = () => copyPasteUrl(id);
+            quickActions.appendChild(btn);
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });

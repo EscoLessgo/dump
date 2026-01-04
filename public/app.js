@@ -168,6 +168,11 @@ function displayPaste(paste) {
     pasteViews.textContent = `${paste.views} ${paste.views === 1 ? 'view' : 'views'}`;
     pasteDate.textContent = formatDate(paste.createdAt);
 
+    // Only show copy/share buttons for public pastes (per user request)
+    const isPublic = paste.isPublic === 1 || paste.isPublic === true;
+    if (copyBtn) copyBtn.style.display = isPublic ? 'flex' : 'none';
+    if (shareBtn) shareBtn.style.display = isPublic ? 'flex' : 'none';
+
     // Show burn notice if applicable
     if (paste.burnAfterRead && !paste.burned) {
         burnNotice.style.display = 'flex';
